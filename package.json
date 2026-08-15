@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "description": "Bench — projects and writing, with an admin panel",
+  "license": "MIT",
   "type": "commonjs",
   "main": "server/server.js",
   "engines": { "node": ">=20" },

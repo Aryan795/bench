@@ -1,190 +1,159 @@
 # Bench
 
-Projects and writing, with an admin panel. Node + Express + MongoDB, one container.
+A self-hosted site for projects and writing, with an admin panel. Node + Express +
+MongoDB, two containers, one `docker compose up`.
 
-```
-src/site.html        the public site — single file, authored by hand
-build.js             wraps it into public/index.html
-public/admin.html    the admin panel
-server/              db, auth, seed, API
-```
+Built for people who make things in more than one discipline — software, hardware,
+research — and want them to sit in a single coherent index rather than three
+disconnected pages.
 
-## Why the site is one file
+- **Editorial layout.** A black-and-white magazine grid, not a card template.
+- **Markdown editor** with a toolbar, live split preview, drag-and-drop and
+  paste-to-upload images, and an image library.
+- **No photography required.** Projects without a cover fall back to hand-drawn SVG
+  plates, so an image slot is never empty.
+- **Loopback by default.** Nothing is published to your LAN or the internet until you
+  deliberately put a proxy in front.
+- **One-command Proxmox LXC installer**, including the unprivileged-container flags
+  Docker needs.
 
-`src/site.html` is content-only — a `<title>`, a `<style>`, then markup. That is the
-shape the published mockup needs, because its host supplies the document skeleton.
-`build.js` supplies the equivalent skeleton for self-hosting. One source, two targets,
-nothing to keep in sync.
+---
 
-The page tries `GET /api/site` on load and falls back to its embedded sample content if
-nothing answers. So the same file works as a live site and as a standalone mockup, and
-a backend outage degrades to sample content rather than a blank page.
+## Contents
 
-## Run it locally
+- [Requirements](#requirements)
+- [Quick start](#quick-start)
+- [Configuration](#configuration)
+- [Writing](#writing)
+- [Deploy to a Proxmox LXC](#deploy-to-a-proxmox-lxc)
+- [Putting it on the internet](#putting-it-on-the-internet)
+- [Updating](#updating)
+- [Backup and restore](#backup-and-restore)
+- [Development](#development)
+- [How it is put together](#how-it-is-put-together)
+- [API](#api)
+- [Security](#security)
+- [Troubleshooting](#troubleshooting)
+- [License](#license)
+
+---
+
+## Requirements
+
+- Docker Engine 20.10+ with the Compose plugin (`docker compose`, not `docker-compose`)
+- `openssl` for generating secrets — present on macOS and every mainstream Linux
+- About 1 GB RAM and 3 GB disk
+
+Nothing else. Node and MongoDB run inside the containers; you do not install them.
+
+---
+
+## Quick start
 
 ```bash
+git clone https://github.com/YOUR-USERNAME/bench.git
+cd bench
 cp .env.example .env
-openssl rand -hex 32          # paste into SESSION_SECRET
-$EDITOR .env                  # also set MONGO_PASSWORD and ADMIN_PASSWORD
-
-docker compose up -d --build
-docker compose logs -f bench  # confirms the admin user was created
 ```
 
-- Site — <http://127.0.0.1:4000>
-- Admin — <http://127.0.0.1:4000/admin>
+Fill in the three blank values in `.env`:
 
-The first boot seeds the admin user and the sample content. Both are idempotent: they
-only run against empty collections, so restarts never duplicate or overwrite real posts.
+```bash
+# a 64-character signing key — the server refuses to start with anything shorter
+openssl rand -hex 32
 
-### Nothing is exposed
+# a database password
+openssl rand -base64 24 | tr -d '/+=' | head -c 24; echo
 
-- **Mongo** has no `ports:` at all. It exists only on the compose network; nothing
-  outside Docker can reach it.
+# and pick an admin password of at least 12 characters
+```
+
+Then bring it up:
+
+```bash
+docker compose up -d --build
+docker compose logs -f bench
+```
+
+Wait for `content seeded 8 projects, 6 posts` in the logs, then open:
+
+| | |
+|---|---|
+| Site | <http://127.0.0.1:4000> |
+| Admin | <http://127.0.0.1:4000/admin> |
+
+Log in with the `ADMIN_USER` / `ADMIN_PASSWORD` you set. The first boot seeds the admin
+user and sample content; both steps are idempotent and only run against empty
+collections, so restarts never duplicate or overwrite your work.
+
+> **Set `MONGO_USER` and `MONGO_PASSWORD` before the first `up`.** Mongo only reads them
+> when it initialises an empty data volume. Changing them later has no effect unless you
+> delete the volume with `docker compose down -v`.
+
+### What is exposed
+
+Nothing, by design:
+
+- **Mongo** has no `ports:` entry at all. It exists only on the Compose network.
 - **Bench** publishes `127.0.0.1:4000:4000` — loopback only. Not your LAN, not the
-  internet, just this machine. That single mapping has to exist or your own browser
-  can't connect either.
+  internet. That mapping must exist or your own browser cannot connect either.
 
-To check what is actually listening:
+Verify it yourself:
 
 ```bash
 docker compose ps
-lsof -nP -iTCP -sTCP:LISTEN | grep 4000   # expect 127.0.0.1:4000, never *:4000
+lsof -nP -iTCP -sTCP:LISTEN | grep 4000    # expect 127.0.0.1:4000, never *:4000
 ```
 
-`SECURE_COOKIES=false` is the default because local access is plain HTTP. A `Secure`
-cookie is dropped by the browser over `http://`, so leaving it true makes login fail
-silently with nothing in the UI to explain why.
+---
 
-## Proxmox LXC
+## Configuration
 
-`deploy/bench-lxc.sh` builds an unprivileged Debian 12 container with Docker inside and
-brings the stack up. Run it **on the Proxmox host, as root**:
+Everything is set in `.env`. Only the first three have no default.
 
-```bash
-# on the Proxmox host, as root:
-apt-get install -y git
-git clone https://github.com/<you>/bench.git /root/bench
-cd /root/bench
-./deploy/bench-lxc.sh
-```
+| Variable | Default | What it does |
+|---|---|---|
+| `SESSION_SECRET` | — | HMAC key for session cookies. Must be 32+ chars or the server exits. Rotating it invalidates every session immediately. |
+| `MONGO_PASSWORD` | — | Database password. Read only on first init. |
+| `ADMIN_PASSWORD` | — | Seeded on first boot, 12 char minimum. Change it in the admin panel afterwards. |
+| `MONGO_USER` | `bench` | Database user. |
+| `MONGO_DB` | `bench` | Database name. |
+| `MONGO_IMAGE` | `mongo:7` | Set to `mongo:4.4` on a CPU without AVX. See [Troubleshooting](#troubleshooting). |
+| `ADMIN_USER` | `admin` | Admin username. |
+| `SECURE_COOKIES` | `false` | Set `true` the moment TLS is in front. Leaving it true over plain HTTP makes login fail silently — the browser drops the cookie. |
+| `TRUST_PROXY` | `0` | Number of proxy hops. Set to your real hop count behind a reverse proxy so the rate-limiter sees real client IPs. |
+| `PUBLIC_ORIGIN` | `http://127.0.0.1:4000` | Your real URL behind a proxy. Admin requests from another origin are rejected as CSRF. |
+| `UPLOAD_BUDGET_BYTES` | `536870912` | Ceiling on total uploaded bytes (512 MB). Uploads past it return 507. |
+| `BIND_HOST` | `127.0.0.1` | Interface the Node process binds. Compose overrides this to `0.0.0.0` inside the container; the loopback *port mapping* is what restricts host access. |
 
-`.env` is gitignored and never enters the repo, so a clone carries no secrets. The script
-generates a fresh `SESSION_SECRET`, Mongo password and admin password inside the container
-on first run, and prints the admin password at the end.
-
-It auto-picks the next free CTID and prints the admin password at the end. Override any
-default via environment:
-
-```bash
-CTID=921 HOSTNAME=bench STORAGE=local-lvm BRIDGE=vmbr0 \
-DISK_GB=8 RAM_MB=1024 CORES=2 ./deploy/bench-lxc.sh
-```
-
-Static IP instead of DHCP:
-
-```bash
-BRIDGE_IP=192.168.1.60/24 GATEWAY=192.168.1.1 ./deploy/bench-lxc.sh
-```
-
-The container is created with `features: nesting=1,keyctl=1` — **Docker will not run in an
-unprivileged LXC without both.** The script sets them; if you build the container by hand,
-you must add them yourself.
-
-Inside the container Bench still binds `127.0.0.1:4000`, so it is not on your LAN until you
-put something in front of it. Manage it with:
-
-```bash
-pct exec <CTID> -- bash -lc 'cd /opt/bench && docker compose ps'
-pct exec <CTID> -- bash -lc 'cd /opt/bench && docker compose logs -f bench'
-```
-
-### Updating from GitHub
-
-The installer pushes a tarball into `/opt/bench`, not a clone, so wire up the remote once:
-
-```bash
-pct exec <CTID> -- bash -lc '
-  cd /opt/bench && git init -q -b main \
-  && git remote add origin https://github.com/<you>/bench.git \
-  && git fetch -q origin && git reset -q --hard origin/main'
-```
-
-`git reset --hard` will not touch `.env` — it is gitignored, so it stays put. After that,
-every update is:
-
-```bash
-pct exec <CTID> -- bash -lc 'cd /opt/bench && git pull && docker compose up -d --build'
-```
-
-Volumes are named by the pinned compose project (`bench_*`), not by the directory, so
-posts and uploads survive a rebuild.
-
-### MongoDB and AVX
-
-MongoDB 5.0+ requires the AVX CPU instruction, and an LXC inherits the host CPU. The
-installer greps `/proc/cpuinfo`: with AVX it uses `mongo:7`; without, it falls back to
-`mongo:4.4` (the last release that runs without AVX) so the deploy never silently
-crash-loops. If your Proxmox node *has* AVX but the container doesn't see it, set the
-node/VM CPU type to `host` and re-run. Override explicitly with `MONGO_IMAGE=...`.
-
-### If you publish it later
-
-Set `SECURE_COOKIES=true` and `TRUST_PROXY=1`, and put Caddy in front — leave the port
-binding on loopback rather than changing it to `0.0.0.0`.
-
-```caddy
-bench.example.com {
-    reverse_proxy 127.0.0.1:4000
-}
-```
-
-## Local development
-
-Needs Node 20+ and a Mongo you can reach.
-
-```bash
-npm install
-docker compose up -d mongo
-export MONGO_URL='mongodb://bench:<password>@127.0.0.1:27017/?authSource=admin'
-export SESSION_SECRET=$(openssl rand -hex 32)
-export ADMIN_USER=admin ADMIN_PASSWORD='at-least-twelve-chars'
-export SECURE_COOKIES=false
-
-npm run build     # regenerate public/index.html after editing src/site.html
-npm run dev
-```
-
-`mongo` has no published port in compose, so expose one temporarily if you want to
-connect from the host.
+---
 
 ## Writing
 
 The admin panel has three tabs.
 
 **Posts** — title, standfirst, Markdown body, cover image, linked project, draft or
-published. Slug is derived from the title unless you set one. Read time is recomputed
-from the body on every save, so it can't drift.
+published. The slug is derived from the title unless you set one. Read time is recomputed
+from the body on every save, so it cannot drift.
 
 **Projects** — name, card headline, standfirst, Markdown body, domain, year, headline
 metric, and spec rows. The *card headline* is the editorial sentence used in the grid; a
-bare project name looks unfinished beside a two-line title, which is the raggedness this
-layout punishes.
+bare project name looks unfinished beside a two-line title.
 
-**Account** — change your password.
+**Account** — change your password, or sign out of every device at once.
 
 Drafts are invisible to the public API. Only `status: published` is ever served.
 
 ### The editor
 
-The body is Markdown, with a toolbar over it. Storage stays plain Markdown, so posts
-remain portable, diffable and readable without this app.
+The body is Markdown and stays Markdown on disk, so your posts remain portable,
+diffable, and readable without this app.
 
 | Control | Does |
 |---|---|
 | H2 · H3 | Toggles a heading prefix on every line the selection touches |
 | **B** · *I* | Wraps the selection, or inserts a placeholder and selects it |
-| Link | `⌘K`. Wraps the selection and prompts for the URL |
+| Link | `⌘K` / `Ctrl+K`. Wraps the selection and prompts for the URL |
 | Lists · Quote | Toggle line prefixes across a multi-line selection |
 | `` ` `` · ``` ``` ``` | Inline code, and a fenced block around the selection |
 | — | Horizontal divider |
@@ -192,18 +161,18 @@ remain portable, diffable and readable without this app.
 | Library | Pick from everything already uploaded |
 | Preview | Side-by-side live render, debounced, using the real server renderer |
 
-`⌘B` / `⌘I` / `⌘K` work in the textarea. Live word count and read-time estimate sit on
-the right of the toolbar.
+`⌘B` / `⌘I` / `⌘K` work inside the textarea. A live word count and read-time estimate sit
+at the right of the toolbar.
 
-**Three ways to add an image mid-post:** the Image button, drag a file onto the editor,
-or paste one straight from the clipboard. All three upload and insert at the cursor.
+**Three ways to add an image mid-post:** the Image button, drag a file onto the editor, or
+paste one from the clipboard. All three upload and insert at the cursor.
 
-The preview uses the same `marked` renderer the site does — it isn't a second
-implementation that can drift.
+The preview calls the same `marked` renderer the site uses, so it is not a second
+implementation that can drift from the real output.
 
 ### Images in the body
 
-Every Markdown image becomes a `<figure>`, so a captioned image is the default rather
+Every Markdown image becomes a `<figure>`, making a captioned image the default rather
 than a special case:
 
 ```markdown
@@ -218,20 +187,15 @@ Width comes from a URL fragment, which stays invisible to any other Markdown ren
 | `/uploads/x.jpg#wide` | 46rem, breaking out of the measure |
 | `/uploads/x.jpg#full` | near full-bleed, up to 88rem |
 
-Both wide forms collapse back to the column below 700px.
-
-After inserting, the cursor is parked inside the caption quotes — a caption is one
-keystroke away rather than something you forget.
+Both wide forms collapse back into the column below 700px. After inserting, the cursor is
+parked inside the caption quotes.
 
 ### Uploads
 
-Files go to the `bench-uploads` volume and are served from `/uploads`. Type is checked
+Files go to the `bench-uploads` volume and are served from `/uploads`. The type is checked
 against the mimetype and the stored filename is randomised — the client filename is never
-used to build a path. Deleting takes a plain filename only; anything with a slash or `..`
-is rejected, and the resolved path is re-checked against the upload directory.
-
-Uploaded SVGs are served under a restrictive `Content-Security-Policy`, because an SVG is
-a document and a crafted one would otherwise run script on this origin.
+used to build a path. Deleting takes a plain filename only; anything containing a slash or
+`..` is rejected, and the resolved path is re-checked against the upload directory.
 
 Deleting an image does **not** rewrite posts that reference it — they will show a broken
 image. The confirm dialog says so.
@@ -239,12 +203,214 @@ image. The confirm dialog says so.
 ### Plates
 
 Projects with no cover image fall back to a hand-drawn SVG plate chosen by the **Plate**
-field. The eight plates live in `src/site.html`; a project whose plate is unset and which
-has no cover gets a deterministic generated lattice, so an image slot is never empty.
+field. The eight plates live in `src/site.html`. A project with no plate and no cover gets
+a deterministic generated lattice, so an image slot is never empty.
+
+---
+
+## Deploy to a Proxmox LXC
+
+`deploy/bench-lxc.sh` creates an unprivileged Debian 12 container, installs Docker inside
+it, and brings the stack up. Run it **on the Proxmox host, as root** — it uses `pct`, so
+it will not work anywhere else.
+
+```bash
+apt-get install -y git
+git clone https://github.com/YOUR-USERNAME/bench.git /root/bench
+cd /root/bench
+./deploy/bench-lxc.sh
+```
+
+It auto-picks the next free CTID, generates every secret inside the container, and prints
+the admin password at the end. `.env` is gitignored and never enters the repo, so a clone
+carries no secrets.
+
+Check your storage name first — the script defaults to `local-lvm`:
+
+```bash
+pvesm status
+```
+
+Override any default through the environment:
+
+```bash
+CTID=921 HOSTNAME=bench STORAGE=local-zfs BRIDGE=vmbr0 \
+DISK_GB=8 RAM_MB=1024 CORES=2 ./deploy/bench-lxc.sh
+```
+
+Static IP instead of DHCP:
+
+```bash
+BRIDGE_IP=192.168.1.60/24 GATEWAY=192.168.1.1 ./deploy/bench-lxc.sh
+```
+
+The container is created with `features: nesting=1,keyctl=1`. **Docker will not run in an
+unprivileged LXC without both.** The script sets them; if you build a container by hand,
+you must add them yourself.
+
+Manage it afterwards:
+
+```bash
+pct exec <CTID> -- bash -lc 'cd /opt/bench && docker compose ps'
+pct exec <CTID> -- bash -lc 'cd /opt/bench && docker compose logs -f bench'
+```
+
+### Reaching it from a browser
+
+Inside the container Bench binds `127.0.0.1:4000`, so it is **not** on your LAN. Browsing
+to the container's IP will fail — that is the intended behaviour, not a bug. Three ways to
+get to it:
+
+**SSH tunnel** — opens nothing:
+
+```bash
+pct exec <CTID> -- bash -lc 'apt-get install -y openssh-server'
+# then from your workstation:
+ssh -N -L 4000:127.0.0.1:4000 root@<container-ip>
+```
+
+Browse `http://127.0.0.1:4000` locally. If SSH refuses the login, Debian's default
+`PermitRootLogin prohibit-password` is why — install your public key instead.
+
+**Publish to the LAN** — edit `docker-compose.yml` in the container, change
+`"127.0.0.1:4000:4000"` to `"4000:4000"`, then `docker compose up -d`. Now anyone on your
+LAN can reach it.
+
+**Tailscale** — needs `/dev/net/tun` passed into the unprivileged container:
+
+```bash
+pct set <CTID> -o lxc.cgroup2.devices.allow="c 10:200 rwm" \
+                -o lxc.mount.entry="/dev/net/tun dev/net/tun none bind,create=file"
+```
+
+Then `tailscale up` inside, and reach it over your tailnet with nothing exposed on the LAN.
+
+---
+
+## Putting it on the internet
+
+Leave the port binding on loopback and put a reverse proxy in front of it. Then set
+`SECURE_COOKIES=true`, `TRUST_PROXY=1`, and `PUBLIC_ORIGIN` to your real URL, and restart.
+
+```caddy
+bench.example.com {
+    reverse_proxy 127.0.0.1:4000
+}
+```
+
+All three settings matter together: without `SECURE_COOKIES` the session cookie travels
+in the clear, without `TRUST_PROXY` the rate-limiter counts every visitor as the proxy,
+and without a correct `PUBLIC_ORIGIN` the CSRF gate will reject your own admin requests.
+
+---
+
+## Updating
+
+```bash
+git pull
+docker compose up -d --build
+```
+
+Volumes are named from the pinned Compose project (`bench_*`) rather than the directory
+name, so posts and uploads survive a rebuild — and renaming or moving the folder does not
+orphan your data.
+
+On an LXC created by the installer, `/opt/bench` is a tarball rather than a clone. Wire up
+the remote once:
+
+```bash
+pct exec <CTID> -- bash -lc '
+  cd /opt/bench && git init -q -b main \
+  && git remote add origin https://github.com/YOUR-USERNAME/bench.git \
+  && git fetch -q origin && git reset -q --hard origin/main'
+```
+
+`git reset --hard` will not touch `.env`, since it is gitignored. After that:
+
+```bash
+pct exec <CTID> -- bash -lc 'cd /opt/bench && git pull && docker compose up -d --build'
+```
+
+---
+
+## Backup and restore
+
+State lives in two volumes: `bench_mongo-data` and `bench_bench-uploads`.
+
+```bash
+# database
+docker compose exec -T mongo mongodump --archive --username "$MONGO_USER" \
+  --password "$MONGO_PASSWORD" --authenticationDatabase admin > bench-$(date +%F).archive
+
+# uploaded images
+docker run --rm -v bench_bench-uploads:/data -v "$PWD":/out alpine \
+  tar czf /out/uploads-$(date +%F).tar.gz -C /data .
+```
+
+Restore the database with:
+
+```bash
+docker compose exec -T mongo mongorestore --archive --username "$MONGO_USER" \
+  --password "$MONGO_PASSWORD" --authenticationDatabase admin < bench-2026-01-01.archive
+```
+
+---
+
+## Development
+
+Needs Node 20+ and a MongoDB you can reach.
+
+```bash
+npm install
+docker compose up -d mongo
+
+export MONGO_URL='mongodb://bench:<password>@127.0.0.1:27017/?authSource=admin'
+export SESSION_SECRET=$(openssl rand -hex 32)
+export ADMIN_USER=admin ADMIN_PASSWORD='at-least-twelve-chars'
+export SECURE_COOKIES=false
+
+npm run build     # regenerate public/index.html after editing src/site.html
+npm run dev
+```
+
+`mongo` has no published port in Compose, so add one temporarily if you want to connect
+from the host.
+
+**Always run `npm run build` after editing `src/site.html`.** `public/index.html` is
+generated and gitignored; the Docker build runs the same step for you.
+
+---
+
+## How it is put together
+
+```
+src/site.html        the public site — a single hand-authored file
+build.js             wraps it into public/index.html
+public/admin.html    the admin panel
+server/
+  db.js              Mongo connection, indexes, slug helpers
+  auth.js            sessions, bcrypt, login throttling
+  seed.js            first-boot admin user and sample content
+  server.js          the API
+deploy/bench-lxc.sh  Proxmox LXC installer
+```
+
+### Why the site is one file
+
+`src/site.html` is content-only — a `<title>`, a `<style>`, then markup. `build.js`
+supplies the document skeleton for self-hosting. One source, two targets, nothing to keep
+in sync by hand.
+
+The page requests `GET /api/site` on load and falls back to embedded sample content if
+nothing answers within 2.5 seconds. So the same file works as a live site *and* as a
+standalone mockup you can open from disk — and a backend outage degrades to sample
+content instead of a blank page.
+
+---
 
 ## API
 
-Public, published content only:
+Public routes serve published content only:
 
 ```
 GET  /api/site              { posts, projects } — what the site boots from
@@ -254,67 +420,98 @@ GET  /api/projects
 GET  /api/projects/:slug
 ```
 
-Auth and admin (session cookie required):
+Auth and admin routes require a session cookie:
 
 ```
 POST   /api/auth/login      { username, password }
 POST   /api/auth/logout
 GET    /api/auth/me
 
-GET    /api/admin/posts     includes drafts and raw Markdown
+GET    /api/admin/posts       includes drafts and raw Markdown
+GET    /api/admin/posts/:id
 POST   /api/admin/posts
 PUT    /api/admin/posts/:id
 DELETE /api/admin/posts/:id
        …identical shape for /api/admin/projects
 
-POST   /api/admin/upload    multipart, field name "image"
-POST   /api/admin/preview   { bodyMd } -> { html }
-POST   /api/admin/password  { current, next }
+GET    /api/admin/uploads     list the image library
+POST   /api/admin/upload      multipart, field name "image"
+DELETE /api/admin/uploads/:name
+
+POST   /api/admin/preview     { bodyMd } -> { html }
+POST   /api/admin/password    { current, next }
+POST   /api/admin/logout-all  bump the session epoch
 ```
 
-## Security notes
+Every state-changing admin route is behind the CSRF origin gate described under
+[Security](#security).
 
-This code has had one adversarial audit (six lenses, findings verified before fixing).
-Eight candidate issues were refuted by controls already present; four were fixed. Current
-posture:
+---
 
-- Sessions are HMAC-signed cookies — `httpOnly`, `SameSite=Strict`, `Secure` in
-  production — carrying a `sessionEpoch`. Changing the password or hitting **Sign out
-  everywhere** bumps the epoch, which invalidates every outstanding cookie on its next
-  request. No server-side session store, so an ordinary restart still keeps you signed in.
-- CSRF has two layers: `SameSite=Strict`, plus a `Sec-Fetch-Site`/`Origin` gate on every
-  state-changing admin route — so a *sibling* subdomain (same-site but different origin)
-  can't drive the admin API. Set `PUBLIC_ORIGIN` to your real URL behind a proxy.
-- Login reserves its rate-limit slot *before* the bcrypt compare, and concurrent bcrypt
-  work is capped (`KDF_CONCURRENCY`, default 4) so a burst of guesses can't stall the
-  single-threaded event loop. 8 attempts per IP per 15 min; in-memory, swept periodically.
-  Move it to Redis before running more than one replica.
-- `TRUST_PROXY` **fails closed to 0** — trusting `X-Forwarded-For` with no proxy in front
-  would let a client spoof the throttle key. Set it to your real hop count behind a proxy.
-- Signature comparison is constant-time; login runs a bcrypt compare even for a missing
-  user, so timing doesn't reveal which usernames exist.
-- Uploads: mimetype-checked, server-randomised filenames, a total-size budget
-  (`UPLOAD_BUDGET_BYTES`) so no session can fill the volume that also holds the database,
-  and a locked-down CSP + `nosniff` on `/uploads` so a crafted SVG can't run script. The
-  delete route takes a plain filename only and re-checks the resolved path.
-- `cover` fields are constrained server-side to `/uploads/<name>` — an external or
-  `javascript:` URL is dropped, not stored.
-- Markdown is rendered without HTML sanitising. Only the authenticated admin can author
-  it, so the only person who can inject script is you. **Add a sanitiser before adding a
-  second author.**
-- Break-glass for a leaked cookie you can't reach with the button: rotate `SESSION_SECRET`
-  and restart — that invalidates every session immediately.
+## Security
 
-## Backup
+This code has had one adversarial audit — six review lenses, with every finding
+independently verified before it was fixed. Eight candidate issues were refuted by
+controls already present; four were real and were fixed. Current posture:
 
-State lives in two volumes: `mongo-data` and `bench-uploads`.
+- **Sessions** are HMAC-signed cookies (`httpOnly`, `SameSite=Strict`, `Secure` in
+  production) carrying a `sessionEpoch`. Changing your password or hitting *Sign out
+  everywhere* bumps the epoch, invalidating every outstanding cookie on its next request.
+  There is no server-side session store, so an ordinary restart keeps you signed in.
+- **CSRF** has two layers: `SameSite=Strict`, plus a `Sec-Fetch-Site`/`Origin` gate on
+  every state-changing admin route. `SameSite` is scoped to the registrable domain, so a
+  sibling subdomain counts as same-site — the Origin check is what stops it driving the
+  admin API.
+- **Login throttling** reserves its rate-limit slot *before* the bcrypt compare, so
+  concurrent guesses cannot slip through the gap. Concurrent bcrypt work is capped
+  (`KDF_CONCURRENCY`, default 4) because bcryptjs is pure JS on the event loop. 8 attempts
+  per IP per 15 minutes, in memory, swept periodically. Move it to Redis before running
+  more than one replica.
+- **`TRUST_PROXY` fails closed to 0.** Trusting `X-Forwarded-For` with no proxy in front
+  would let any client spoof the throttle key.
+- Signature comparison is constant-time, and login runs a bcrypt compare even for a
+  missing user, so response timing does not reveal which usernames exist.
+- **Uploads** are mimetype-checked with server-randomised filenames, bounded by a total
+  size budget so no session can fill the volume that also holds the database, and served
+  under a restrictive CSP with `nosniff` — an SVG is a document, and a crafted one would
+  otherwise run script on this origin.
+- `cover` fields are constrained server-side to `/uploads/<name>`; an external or
+  `javascript:` URL is dropped rather than stored.
+- **Break-glass:** rotate `SESSION_SECRET` and restart to invalidate every session
+  everywhere, immediately.
 
-```bash
-docker compose exec -T mongo mongodump --archive --username "$MONGO_USER" \
-  --password "$MONGO_PASSWORD" --authenticationDatabase admin > bench-$(date +%F).archive
+### Known limitation
 
-docker run --rm -v bench_bench-uploads:/data -v "$PWD":/out alpine \
-  tar czf /out/uploads-$(date +%F).tar.gz -C /data .
-```
+Markdown is rendered **without HTML sanitising**. Only the authenticated admin can author
+content, so the only person who can inject script is you. **Add a sanitiser before you add
+a second author.**
 
-Restore with `mongorestore --archive < file`.
+---
+
+## Troubleshooting
+
+**Login does nothing, no error shown.** `SECURE_COOKIES=true` over plain HTTP. The browser
+silently drops a `Secure` cookie on `http://`. Set it to `false` locally.
+
+**Mongo crash-loops on an older CPU.** MongoDB 5.0+ requires the AVX instruction set. Set
+`MONGO_IMAGE=mongo:4.4` in `.env` — the last release that runs without it. On Proxmox the
+LXC inherits the host CPU, so the installer detects this and picks the image for you; if
+your node *has* AVX but the container cannot see it, set the CPU type to `host`.
+
+**`docker: command not found` inside a fresh LXC.** The container is missing
+`nesting=1,keyctl=1`. Check with `pct config <CTID> | grep features`.
+
+**Changed `MONGO_PASSWORD` and now it will not connect.** Mongo only reads that variable
+when initialising an empty volume. Either revert it, or `docker compose down -v` and start
+over — which erases your posts.
+
+**Site shows sample content that is not in the admin panel.** The page could not reach
+`/api/site` and fell back to its embedded content. Check `docker compose logs bench`.
+
+**`public/index.html` is missing.** Run `npm run build`.
+
+---
+
+## License
+
+MIT — see [LICENSE](LICENSE).
