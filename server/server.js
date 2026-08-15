@@ -43,6 +43,45 @@ app.use(express.json({ limit: "1mb" }));
 app.use(cookieParser());
 
 /* ---------------------------------------------------------------
+   Baseline security headers
+
+   The admin panel is a same-origin page that performs state-changing
+   actions, so it must not be framable: without frame-ancestors an
+   attacker's page can iframe /admin and clickjack a logged-in admin
+   into deleting posts. base-uri and form-action close the two ways
+   injected markup could redirect a form or rewrite relative URLs.
+
+   'unsafe-inline' is required for script and style because the site
+   and the admin panel are deliberately single files with inline
+   <style> and <script>. It weakens XSS defence-in-depth, but the
+   framing, form and object controls below still hold.
+   --------------------------------------------------------------- */
+const CSP = [
+  "default-src 'self'",
+  "img-src 'self' data:",
+  "style-src 'self' 'unsafe-inline'",
+  "script-src 'self' 'unsafe-inline'",
+  "connect-src 'self'",
+  "object-src 'none'",
+  "base-uri 'none'",
+  "form-action 'self'",
+  "frame-ancestors 'none'"
+].join("; ");
+
+app.use((_req, res, next) => {
+  res.setHeader("Content-Security-Policy", CSP);
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "DENY"); // for browsers predating frame-ancestors
+  res.setHeader("Referrer-Policy", "no-referrer");
+  // Only meaningful over TLS; harmless on plain HTTP, and stops the header
+  // being forgotten at the moment a proxy is put in front.
+  if (SECURE_COOKIES) {
+    res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+  }
+  next();
+});
+
+/* ---------------------------------------------------------------
    Markdown rendering
    --------------------------------------------------------------- */
 
@@ -638,6 +677,11 @@ app.use("/uploads", express.static(UPLOAD_DIR, {
     res.setHeader("X-Content-Type-Options", "nosniff");
   }
 }));
+
+// A missing image must 404. Without this it falls through to the SPA catch-all
+// below and every broken <img> downloads the whole HTML shell with HTTP 200 —
+// which hides the mistake and wastes ~60 kB per broken image.
+app.use("/uploads", (_req, res) => res.status(404).json({ error: "Not found" }));
 
 app.use(express.static(PUBLIC_DIR, { extensions: ["html"], maxAge: "1h" }));
 

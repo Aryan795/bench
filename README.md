@@ -469,6 +469,11 @@ controls already present; four were real and were fixed. Current posture:
   more than one replica.
 - **`TRUST_PROXY` fails closed to 0.** Trusting `X-Forwarded-For` with no proxy in front
   would let any client spoof the throttle key.
+- **Baseline headers** on every response: `frame-ancestors 'none'` plus `X-Frame-Options:
+  DENY` so the admin panel cannot be framed and clickjacked, `nosniff`, `no-referrer`,
+  `base-uri 'none'`, `object-src 'none'`, and HSTS once `SECURE_COOKIES` is on. Script and
+  style need `'unsafe-inline'` because the site and admin panel are deliberately single
+  files.
 - Signature comparison is constant-time, and login runs a bcrypt compare even for a
   missing user, so response timing does not reveal which usernames exist.
 - **Uploads** are mimetype-checked with server-randomised filenames, bounded by a total
@@ -480,11 +485,26 @@ controls already present; four were real and were fixed. Current posture:
 - **Break-glass:** rotate `SESSION_SECRET` and restart to invalidate every session
   everywhere, immediately.
 
-### Known limitation
+### Known limitations
 
-Markdown is rendered **without HTML sanitising**. Only the authenticated admin can author
-content, so the only person who can inject script is you. **Add a sanitiser before you add
-a second author.**
+**Markdown is rendered without HTML sanitising.** A raw `<script>` block in a post body is
+passed straight through to the page. Only the authenticated admin can author content, so
+the only person who can inject script is you. `javascript:` and `vbscript:` URLs in links
+and images *are* stripped. **Add a sanitiser before you add a second author.**
+
+**The login throttle keys on `req.ip`, which Docker collapses.** Requests arriving through
+a published port appear to come from the bridge gateway (`172.17.0.1`), not the real
+client — so the per-IP limit behaves as one global bucket. Consequences:
+
+- Loopback-only (the default): no impact, you are the only client.
+- Published to a LAN with no proxy: any device can spend the 8 attempts and lock *you*
+  out of the admin panel for 15 minutes. It cannot help them guess the password — it is a
+  lockout nuisance, not a bypass.
+- Behind a reverse proxy: set `TRUST_PROXY` to the real hop count. Express then reads the
+  client address from `X-Forwarded-For` and per-IP limiting works properly again.
+
+Fixing this inside the app is not possible — the source address genuinely is the gateway
+by the time Node sees it. Put a proxy in front and set `TRUST_PROXY`.
 
 ---
 

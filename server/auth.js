@@ -148,7 +148,17 @@ if (sweeper.unref) sweeper.unref();
    added latency instead of a stalled server.
    --------------------------------------------------------------- */
 
-const KDF_MAX = Number(process.env.KDF_CONCURRENCY || 4);
+// Must be a positive integer. 0, a negative, or a typo would make kdfAcquire()
+// never grant a slot, so every login would hang forever instead of failing
+// loudly — fall back to the default rather than deadlocking on a config typo.
+const KDF_RAW = Number(process.env.KDF_CONCURRENCY);
+const KDF_MAX = Number.isInteger(KDF_RAW) && KDF_RAW > 0 ? KDF_RAW : 4;
+if (process.env.KDF_CONCURRENCY && KDF_MAX !== KDF_RAW) {
+  console.warn(
+    `  warning  KDF_CONCURRENCY=${JSON.stringify(process.env.KDF_CONCURRENCY)}` +
+    " is not a positive integer — using 4."
+  );
+}
 let kdfActive = 0;
 const kdfQueue = [];
 
