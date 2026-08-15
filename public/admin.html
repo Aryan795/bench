@@ -1,0 +1,1077 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Bench — Admin</title>
+<style>
+:root {
+  --bg: #FFFFFF; --ink: #000000; --text: #16161A; --muted: #6E6E73;
+  --hairline: #DCDCDE; --field: #F4F4F5; --block-bg: #000000; --block-fg: #FFFFFF;
+  --ok: #1B6B3A; --warn: #8A4B00; --bad: #A11B1B;
+  --display: "Playfair Display", "Hoefler Text", Baskerville, Georgia, serif;
+  --serif: "Iowan Old Style", Charter, "Sitka Text", Palatino, Georgia, serif;
+  --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0A0A0A; --ink: #FFFFFF; --text: #ECECEE; --muted: #9A9AA0;
+    --hairline: #2A2A2C; --field: #151517; --block-bg: #FFFFFF; --block-fg: #0A0A0A;
+    --ok: #6FD08C; --warn: #E0A458; --bad: #FF8B8B;
+  }
+}
+:root[data-theme="light"] { --bg:#FFFFFF; --ink:#000; --text:#16161A; --muted:#6E6E73; --hairline:#DCDCDE; --field:#F4F4F5; --block-bg:#000; --block-fg:#FFF; --ok:#1B6B3A; --warn:#8A4B00; --bad:#A11B1B; }
+:root[data-theme="dark"]  { --bg:#0A0A0A; --ink:#FFF; --text:#ECECEE; --muted:#9A9AA0; --hairline:#2A2A2C; --field:#151517; --block-bg:#FFF; --block-fg:#0A0A0A; --ok:#6FD08C; --warn:#E0A458; --bad:#FF8B8B; }
+:root { color-scheme: light; }
+@media (prefers-color-scheme: dark) { :root { color-scheme: dark; } }
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"] { color-scheme: dark; }
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--serif); font-size: 17px; line-height: 1.55; -webkit-font-smoothing: antialiased; }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+.bar { background: var(--block-bg); color: var(--block-fg); }
+.bar-in { max-width: 74rem; margin-inline: auto; padding: .9rem clamp(1rem,3vw,2rem); display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap; }
+.mark { font-family: var(--display); font-size: 1.5rem; letter-spacing: .05em; text-transform: uppercase; text-decoration: none; }
+.mark small { font-family: var(--serif); font-style: italic; font-size: .75rem; letter-spacing: 0; text-transform: none; opacity: .7; margin-left: .5rem; }
+.bar nav { display: flex; gap: 1.5rem; margin-left: auto; align-items: center; }
+.bar nav button, .bar nav a { background: none; border: 0; color: inherit; font-family: var(--serif); font-style: italic; font-size: 1rem; cursor: pointer; text-decoration: none; padding: 0 0 2px; border-bottom: 1px solid transparent; }
+.bar nav button[aria-current="true"] { border-bottom-color: currentColor; }
+.bar nav button:hover, .bar nav a:hover { opacity: .7; }
+
+.wrap { max-width: 74rem; margin-inline: auto; padding: 2rem clamp(1rem,3vw,2rem) 5rem; }
+
+h1 { font-family: var(--serif); font-weight: 400; font-size: 1.9rem; margin: 0 0 .25rem; color: var(--ink); }
+.sub { color: var(--muted); font-style: italic; margin: 0 0 2rem; }
+
+.head-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; border-bottom: 2px solid var(--ink); padding-bottom: .5rem; margin-bottom: 1.5rem; }
+.head-row h2 { font-size: 1.1rem; font-weight: 400; letter-spacing: .09em; text-transform: uppercase; margin: 0; color: var(--ink); }
+
+button.act { font-family: var(--serif); font-style: italic; font-size: 1rem; background: var(--block-bg); color: var(--block-fg); border: 0; padding: .5rem 1.25rem; cursor: pointer; }
+button.act:hover { opacity: .85; }
+button.act[disabled] { opacity: .45; cursor: default; }
+button.ghost { background: none; color: var(--ink); border: 1px solid var(--ink); }
+button.danger { background: none; color: var(--bad); border: 1px solid var(--bad); }
+button.link { background: none; border: 0; color: var(--muted); font-family: var(--serif); font-style: italic; cursor: pointer; font-size: .95rem; padding: 0; }
+button.link:hover { color: var(--ink); }
+
+table { width: 100%; border-collapse: collapse; }
+th { text-align: left; font-weight: 400; font-style: italic; color: var(--muted); font-size: .9rem; padding: .5rem .75rem .5rem 0; border-bottom: 1px solid var(--hairline); }
+td { padding: .7rem .75rem .7rem 0; border-bottom: 1px solid var(--hairline); vertical-align: top; }
+tbody tr:hover { background: var(--field); }
+td.t { font-size: 1.05rem; color: var(--ink); }
+td.t small { display: block; font-family: var(--mono); font-size: .75rem; color: var(--muted); margin-top: .2rem; }
+.rowacts { display: flex; gap: .875rem; justify-content: flex-end; }
+.tablewrap { overflow-x: auto; }
+
+.pill { display: inline-block; font-family: var(--mono); font-size: .68rem; letter-spacing: .08em; text-transform: uppercase; padding: .15rem .5rem; border: 1px solid currentColor; white-space: nowrap; }
+.pill.published { color: var(--ok); }
+.pill.draft { color: var(--warn); }
+
+.grid2 { display: grid; grid-template-columns: minmax(0,1fr) 20rem; gap: 2rem; align-items: start; }
+@media (max-width: 900px) { .grid2 { grid-template-columns: minmax(0,1fr); } }
+
+.field { display: flex; flex-direction: column; gap: .3rem; margin-bottom: 1.25rem; }
+.field label { font-style: italic; color: var(--muted); font-size: .95rem; }
+.field .hint { font-size: .8rem; color: var(--muted); font-style: italic; }
+input, select, textarea {
+  font-family: var(--serif); font-size: 1.02rem; color: var(--text);
+  background: var(--field); border: 1px solid var(--hairline); border-radius: 0;
+  padding: .55rem .7rem; width: 100%;
+}
+input:focus, select:focus, textarea:focus { border-color: var(--ink); outline: none; }
+input.mono, textarea.mono { font-family: var(--mono); font-size: .92rem; }
+textarea { resize: vertical; line-height: 1.6; }
+textarea.body { min-height: 26rem; }
+
+.side { border: 1px solid var(--hairline); padding: 1.25rem; }
+.side h3 { font-size: .8rem; letter-spacing: .09em; text-transform: uppercase; font-weight: 400; margin: 0 0 1rem; color: var(--muted); }
+
+.speclist { display: flex; flex-direction: column; gap: .5rem; }
+.specrow { display: grid; grid-template-columns: 1fr 1fr auto; gap: .5rem; }
+.specrow button { background: none; border: 1px solid var(--hairline); color: var(--muted); cursor: pointer; padding: 0 .6rem; }
+
+.toast { position: fixed; left: 50%; bottom: 1.5rem; transform: translateX(-50%); background: var(--block-bg); color: var(--block-fg); padding: .7rem 1.4rem; font-style: italic; z-index: 50; max-width: 90vw; }
+.toast.bad { background: var(--bad); color: #fff; }
+
+.center { max-width: 22rem; margin: 12vh auto; }
+.center h1 { text-align: center; font-family: var(--display); text-transform: uppercase; letter-spacing: .06em; font-size: 2.5rem; }
+.center .sub { text-align: center; }
+
+.preview { border: 1px solid var(--hairline); padding: 1.5rem; max-height: 30rem; overflow: auto; }
+.preview :is(h1,h2,h3) { font-weight: 400; color: var(--ink); }
+.preview pre { background: var(--field); padding: .875rem; overflow-x: auto; font-family: var(--mono); font-size: .85rem; }
+.preview blockquote { border-left: 2px solid var(--ink); margin: 1rem 0; padding-left: 1rem; font-style: italic; }
+.preview img { max-width: 100%; }
+
+.cover { margin-top: .5rem; border: 1px solid var(--hairline); background: var(--field); }
+.cover img { display: block; width: 100%; }
+
+/* ---- markdown editor ---- */
+.editor { border: 1px solid var(--hairline); }
+.toolbar {
+  display: flex; flex-wrap: wrap; gap: .15rem; align-items: center;
+  padding: .35rem; background: var(--field); border-bottom: 1px solid var(--hairline);
+}
+.toolbar button {
+  background: none; border: 1px solid transparent; color: var(--text); cursor: pointer;
+  font-family: var(--serif); font-size: .95rem; line-height: 1.1; padding: .38rem .55rem; min-width: 2rem;
+}
+.toolbar button:hover { border-color: var(--hairline); background: var(--bg); }
+.toolbar button[aria-pressed="true"] { border-color: var(--ink); }
+.toolbar .sep { width: 1px; align-self: stretch; background: var(--hairline); margin: .15rem .3rem; }
+.toolbar .count { margin-left: auto; font-size: .78rem; font-style: italic; color: var(--muted); padding-right: .4rem; white-space: nowrap; }
+.toolbar .mono-lbl { font-family: var(--mono); font-size: .8rem; }
+
+.split { display: grid; grid-template-columns: 1fr; }
+.split.on { grid-template-columns: 1fr 1fr; }
+.split textarea { border: 0; background: var(--bg); }
+.split .pv { border-left: 1px solid var(--hairline); padding: 1.25rem; overflow: auto; }
+.split:not(.on) .pv { display: none; }
+@media (max-width: 900px) {
+  .split.on { grid-template-columns: 1fr; }
+  .split.on .pv { border-left: 0; border-top: 1px solid var(--hairline); }
+}
+.editor.drop { outline: 2px dashed var(--ink); outline-offset: -4px; }
+
+/* figures inside the preview, matching how the site renders them */
+.preview figure, .pv figure { margin: 1.25rem 0; }
+.preview figure img, .pv figure img { display: block; width: 100%; }
+.preview figcaption, .pv figcaption { font-size: .8rem; font-style: italic; color: var(--muted); padding-top: .4rem; }
+.preview hr, .pv hr { border: 0; border-top: 1px solid var(--hairline); margin: 1.5rem 0; }
+.preview code, .pv code { font-family: var(--mono); font-size: .88em; background: var(--field); padding: .1em .3em; }
+.preview pre code, .pv pre code { background: none; padding: 0; }
+
+/* ---- image library ---- */
+.modal { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: grid; place-items: center; z-index: 60; padding: 1rem; }
+.modal-box { background: var(--bg); border: 1px solid var(--ink); width: 100%; max-width: 54rem; max-height: 86vh; display: flex; flex-direction: column; }
+.modal-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem 1.25rem; border-bottom: 1px solid var(--hairline); }
+.modal-head h3 { margin: 0; font-weight: 400; font-size: 1rem; letter-spacing: .09em; text-transform: uppercase; }
+.modal-body { padding: 1.25rem; overflow: auto; }
+.lib { display: grid; grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr)); gap: .875rem; }
+.lib figure { margin: 0; border: 1px solid var(--hairline); }
+.lib figure:hover { border-color: var(--ink); }
+.lib img { display: block; width: 100%; aspect-ratio: 4/3; object-fit: cover; background: var(--field); cursor: pointer; }
+.lib figcaption { font-family: var(--mono); font-size: .66rem; color: var(--muted); padding: .3rem .4rem; word-break: break-all; }
+.lib .del { display: block; width: 100%; background: none; border: 0; border-top: 1px solid var(--hairline); color: var(--muted); font-family: var(--serif); font-style: italic; font-size: .75rem; cursor: pointer; padding: .3rem; }
+.lib .del:hover { color: var(--bad); }
+
+.hidden { display: none !important; }
+.empty { color: var(--muted); font-style: italic; padding: 2rem 0; }
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN ============ -->
+<div id="loginView" class="hidden">
+  <div class="wrap">
+    <div class="center">
+      <h1>Bench</h1>
+      <p class="sub">Sign in to write</p>
+      <form id="loginForm">
+        <div class="field">
+          <label for="lu">Username</label>
+          <input id="lu" autocomplete="username" required>
+        </div>
+        <div class="field">
+          <label for="lp">Password</label>
+          <input id="lp" type="password" autocomplete="current-password" required>
+        </div>
+        <button class="act" style="width:100%" type="submit">Sign in</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ============ APP ============ -->
+<div id="appView" class="hidden">
+  <div class="bar">
+    <div class="bar-in">
+      <a class="mark" href="/">Bench<small>admin</small></a>
+      <nav>
+        <button data-tab="posts">Posts</button>
+        <button data-tab="projects">Projects</button>
+        <button data-tab="account">Account</button>
+        <a href="/" target="_blank" rel="noopener">View site ↗</a>
+        <button id="themeBtn" title="Switch theme" aria-label="Switch theme">◐</button>
+        <button id="logoutBtn">Sign out</button>
+      </nav>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <!-- posts list -->
+    <section id="tab-posts">
+      <div class="head-row">
+        <h2>Posts</h2>
+        <button class="act" id="newPost">New post</button>
+      </div>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Title</th><th>Status</th><th>Published</th><th>Read</th><th></th></tr></thead>
+        <tbody id="postRows"></tbody>
+      </table></div>
+    </section>
+
+    <!-- projects list -->
+    <section id="tab-projects" class="hidden">
+      <div class="head-row">
+        <h2>Projects</h2>
+        <button class="act" id="newProject">New project</button>
+      </div>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Title</th><th>Domain</th><th>Year</th><th>Metric</th><th>Status</th><th></th></tr></thead>
+        <tbody id="projectRows"></tbody>
+      </table></div>
+    </section>
+
+    <!-- account -->
+    <section id="tab-account" class="hidden">
+      <div class="head-row"><h2>Account</h2></div>
+      <div style="max-width:26rem">
+        <p class="sub">Signed in as <strong id="whoami"></strong>.</p>
+        <form id="pwForm">
+          <div class="field">
+            <label for="pc">Current password</label>
+            <input id="pc" type="password" autocomplete="current-password" required>
+          </div>
+          <div class="field">
+            <label for="pn">New password</label>
+            <input id="pn" type="password" autocomplete="new-password" required>
+            <span class="hint">At least 12 characters.</span>
+          </div>
+          <button class="act" type="submit">Change password</button>
+        </form>
+        <p class="sub" style="margin-top:2.5rem">Signed in on a shared or lost device? This
+        invalidates every session everywhere, including this one.</p>
+        <button class="act danger" id="logoutAllBtn" type="button">Sign out everywhere</button>
+      </div>
+    </section>
+
+    <!-- post editor -->
+    <section id="tab-postEdit" class="hidden">
+      <div class="head-row">
+        <h2 id="postEditTitle">New post</h2>
+        <button class="link" data-back="posts">← Back to posts</button>
+      </div>
+      <form id="postForm" class="grid2">
+        <div>
+          <div class="field">
+            <label for="p-title">Title</label>
+            <input id="p-title" required>
+          </div>
+          <div class="field">
+            <label for="p-dek">Standfirst</label>
+            <input id="p-dek">
+            <span class="hint">One sentence. Shows on the card and under the headline.</span>
+          </div>
+          <div class="field">
+            <label for="p-body">Body — Markdown</label>
+            <div class="editor" data-editor>
+              <div class="toolbar" data-for="p-body"></div>
+              <div class="split">
+                <textarea id="p-body" class="body mono"></textarea>
+                <div class="preview pv" data-preview-for="p-body"></div>
+              </div>
+            </div>
+            <span class="hint">Drag an image onto the editor, or paste one from the clipboard — it uploads and
+            is inserted at the cursor. Add a caption in the quotes: <code>![alt](/uploads/x.jpg "Caption")</code></span>
+          </div>
+        </div>
+
+        <div>
+          <div class="side">
+            <h3>Publish</h3>
+            <div class="field">
+              <label for="p-status">Status</label>
+              <select id="p-status">
+                <option value="draft">Draft</option>
+                <option value="published">Published</option>
+              </select>
+            </div>
+            <button class="act" type="submit" style="width:100%">Save post</button>
+            <p class="hint" id="p-meta" style="margin:.75rem 0 0"></p>
+          </div>
+
+          <div class="side" style="margin-top:1.5rem">
+            <h3>Details</h3>
+            <div class="field">
+              <label for="p-slug">Slug</label>
+              <input id="p-slug" class="mono">
+              <span class="hint">Leave blank to derive from the title.</span>
+            </div>
+            <div class="field">
+              <label for="p-category">Category</label>
+              <input id="p-category" placeholder="Essay">
+            </div>
+            <div class="field">
+              <label for="p-project">Linked project</label>
+              <select id="p-project"><option value="">None</option></select>
+            </div>
+            <div class="field">
+              <label for="p-cover">Cover image</label>
+              <input id="p-cover" type="file" accept="image/*">
+              <span class="hint">Optional. Falls back to the project plate.</span>
+              <div id="p-coverPrev" class="cover hidden"></div>
+            </div>
+          </div>
+        </div>
+      </form>
+    </section>
+
+    <!-- project editor -->
+    <section id="tab-projectEdit" class="hidden">
+      <div class="head-row">
+        <h2 id="projectEditTitle">New project</h2>
+        <button class="link" data-back="projects">← Back to projects</button>
+      </div>
+      <form id="projectForm" class="grid2">
+        <div>
+          <div class="field">
+            <label for="j-title">Name</label>
+            <input id="j-title" required>
+          </div>
+          <div class="field">
+            <label for="j-headline">Card headline</label>
+            <input id="j-headline">
+            <span class="hint">The editorial sentence used on cards. A bare name looks unfinished in the grid.</span>
+          </div>
+          <div class="field">
+            <label for="j-dek">Standfirst</label>
+            <input id="j-dek">
+          </div>
+          <div class="field">
+            <label for="j-body">Body — Markdown</label>
+            <div class="editor" data-editor>
+              <div class="toolbar" data-for="j-body"></div>
+              <div class="split">
+                <textarea id="j-body" class="body mono"></textarea>
+                <div class="preview pv" data-preview-for="j-body"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="side">
+            <h3>Publish</h3>
+            <div class="field">
+              <label for="j-status">Status</label>
+              <select id="j-status">
+                <option value="published">Published</option>
+                <option value="draft">Draft</option>
+              </select>
+            </div>
+            <button class="act" type="submit" style="width:100%">Save project</button>
+          </div>
+
+          <div class="side" style="margin-top:1.5rem">
+            <h3>Details</h3>
+            <div class="field">
+              <label for="j-slug">Slug</label>
+              <input id="j-slug" class="mono">
+            </div>
+            <div class="field">
+              <label for="j-domain">Domain</label>
+              <select id="j-domain">
+                <option value="sw">Software</option>
+                <option value="hw">Hardware</option>
+                <option value="ml">Machine Learning</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="j-year">Year</label>
+              <input id="j-year" class="mono" type="number" min="1970" max="2100">
+            </div>
+            <div class="field">
+              <label for="j-state">State</label>
+              <input id="j-state" placeholder="Active">
+            </div>
+            <div class="field">
+              <label for="j-metric">Headline number</label>
+              <input id="j-metric" class="mono" placeholder="4.2×">
+            </div>
+            <div class="field">
+              <label for="j-metricKey">…of what</label>
+              <input id="j-metricKey" placeholder="Cold-build speedup">
+            </div>
+            <div class="field">
+              <label for="j-plate">Plate</label>
+              <select id="j-plate"></select>
+              <span class="hint">The line drawing used as the card image.</span>
+            </div>
+          </div>
+
+          <div class="side" style="margin-top:1.5rem">
+            <h3>Spec rows</h3>
+            <div class="speclist" id="specList"></div>
+            <button class="link" type="button" id="addSpec" style="margin-top:.75rem">+ Add row</button>
+          </div>
+        </div>
+      </form>
+    </section>
+  </div>
+</div>
+
+<div class="modal hidden" id="libModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3>Image library</h3>
+      <div style="display:flex;gap:1.25rem;align-items:center">
+        <button class="link" id="libUpload">Upload new</button>
+        <button class="link" id="libClose">Close</button>
+      </div>
+    </div>
+    <div class="modal-body"><div class="lib" id="libGrid"></div></div>
+  </div>
+</div>
+
+<input type="file" id="hiddenFile" accept="image/*" multiple class="hidden">
+
+<script>
+(function () {
+  "use strict";
+
+  var PLATES = ["", "kettle", "tracewright", "marginalia", "sidereal", "loam", "hookshot", "cardinal", "understory"];
+  var state = { posts: [], projects: [], editingPost: null, editingProject: null, cover: null };
+
+  /* ---------- helpers ---------- */
+
+  function $(id) { return document.getElementById(id); }
+
+  function toast(msg, bad) {
+    var el = document.createElement("div");
+    el.className = "toast" + (bad ? " bad" : "");
+    el.textContent = msg;
+    document.body.appendChild(el);
+    setTimeout(function () { el.remove(); }, 3200);
+  }
+
+  async function api(path, opts) {
+    opts = opts || {};
+    var res = await fetch(path, {
+      method: opts.method || "GET",
+      credentials: "same-origin",
+      headers: opts.body ? { "Content-Type": "application/json" } : undefined,
+      body: opts.body ? JSON.stringify(opts.body) : undefined
+    });
+    if (res.status === 401) { showLogin(); throw new Error("Signed out"); }
+    var data = null;
+    try { data = await res.json(); } catch (e) { /* empty body */ }
+    if (!res.ok) throw new Error((data && data.error) || ("Request failed (" + res.status + ")"));
+    return data;
+  }
+
+  function esc(s) {
+    return String(s == null ? "" : s)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+
+  function fmtDate(iso) {
+    if (!iso) return "—";
+    var d = new Date(iso);
+    return isNaN(d) ? "—" : d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+  }
+
+  /* ---------- view switching ---------- */
+
+  var TABS = ["posts", "projects", "account", "postEdit", "projectEdit"];
+
+  function showTab(name) {
+    TABS.forEach(function (t) { $("tab-" + t).classList.toggle("hidden", t !== name); });
+    Array.prototype.forEach.call(document.querySelectorAll("[data-tab]"), function (b) {
+      b.setAttribute("aria-current", String(b.getAttribute("data-tab") === name));
+    });
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll("[data-tab]"), function (b) {
+    b.addEventListener("click", function () { showTab(b.getAttribute("data-tab")); });
+  });
+  Array.prototype.forEach.call(document.querySelectorAll("[data-back]"), function (b) {
+    b.addEventListener("click", function () { showTab(b.getAttribute("data-back")); });
+  });
+
+  function showLogin() { $("loginView").classList.remove("hidden"); $("appView").classList.add("hidden"); }
+  function showApp() { $("loginView").classList.add("hidden"); $("appView").classList.remove("hidden"); }
+
+  /* ---------- auth ---------- */
+
+  $("loginForm").addEventListener("submit", async function (e) {
+    e.preventDefault();
+    try {
+      var r = await api("/api/auth/login", { method: "POST", body: { username: $("lu").value, password: $("lp").value } });
+      $("lp").value = "";
+      $("whoami").textContent = r.user.username;
+      showApp();
+      await loadAll();
+      showTab("posts");
+    } catch (err) { toast(err.message, true); }
+  });
+
+  $("logoutBtn").addEventListener("click", async function () {
+    try { await api("/api/auth/logout", { method: "POST" }); } catch (e) { /* clearing anyway */ }
+    showLogin();
+  });
+
+  $("pwForm").addEventListener("submit", async function (e) {
+    e.preventDefault();
+    try {
+      await api("/api/admin/password", { method: "POST", body: { current: $("pc").value, next: $("pn").value } });
+      $("pc").value = ""; $("pn").value = "";
+      toast("Password changed — other sessions signed out");
+    } catch (err) { toast(err.message, true); }
+  });
+
+  $("logoutAllBtn").addEventListener("click", async function () {
+    if (!confirm("Sign out of every device, including this one?")) return;
+    try {
+      await api("/api/admin/logout-all", { method: "POST" });
+    } catch (e) { /* the cookie is already invalid; fall through to login */ }
+    showLogin();
+  });
+
+  /* ---------- posts ---------- */
+
+  async function loadAll() {
+    var r = await Promise.all([api("/api/admin/posts"), api("/api/admin/projects")]);
+    state.posts = r[0]; state.projects = r[1];
+    renderPosts(); renderProjects(); fillProjectSelect();
+  }
+
+  function renderPosts() {
+    var tb = $("postRows");
+    if (!state.posts.length) {
+      tb.innerHTML = '<tr><td colspan="5" class="empty">No posts yet. Write the first one.</td></tr>';
+      return;
+    }
+    tb.innerHTML = state.posts.map(function (p) {
+      return '<tr>' +
+        '<td class="t">' + esc(p.title) + '<small>/' + esc(p.slug) + '</small></td>' +
+        '<td><span class="pill ' + p.status + '">' + p.status + '</span></td>' +
+        '<td>' + fmtDate(p.publishedAt) + '</td>' +
+        '<td>' + p.readMinutes + ' min</td>' +
+        '<td><div class="rowacts">' +
+          '<button class="link" data-edit-post="' + p.id + '">Edit</button>' +
+          '<button class="link" data-del-post="' + p.id + '">Delete</button>' +
+        '</div></td></tr>';
+    }).join("");
+  }
+
+  function fillProjectSelect() {
+    $("p-project").innerHTML = '<option value="">None</option>' +
+      state.projects.map(function (j) {
+        return '<option value="' + esc(j.slug) + '">' + esc(j.title) + '</option>';
+      }).join("");
+    $("j-plate").innerHTML = PLATES.map(function (p) {
+      return '<option value="' + p + '">' + (p || "— none —") + '</option>';
+    }).join("");
+  }
+
+  function openPost(p) {
+    state.editingPost = p ? p.id : null;
+    state.cover = p ? p.cover : null;
+    $("postEditTitle").textContent = p ? "Edit post" : "New post";
+    $("p-title").value = p ? p.title : "";
+    $("p-dek").value = p ? p.dek : "";
+    $("p-body").value = p ? (p.bodyMd || "") : "";
+    $("p-slug").value = p ? p.slug : "";
+    $("p-category").value = p ? p.category : "Essay";
+    $("p-status").value = p ? p.status : "draft";
+    $("p-project").value = p && p.projectSlug ? p.projectSlug : "";
+    $("p-meta").textContent = p
+      ? "Updated " + fmtDate(p.updatedAt) + (p.publishedAt ? " · published " + fmtDate(p.publishedAt) : "")
+      : "";
+    renderCover();
+    showTab("postEdit");
+    // Toolbars are built lazily: the textarea must be visible before
+    // setSelectionRange and focus behave predictably.
+    buildEditors();
+    updateCount($("p-body"));
+    renderPreview($("p-body"));
+  }
+
+  function renderCover() {
+    var box = $("p-coverPrev");
+    if (state.cover) {
+      box.innerHTML = '<img src="' + esc(state.cover) + '" alt="">';
+      box.classList.remove("hidden");
+    } else {
+      box.innerHTML = ""; box.classList.add("hidden");
+    }
+  }
+
+  $("newPost").addEventListener("click", function () { openPost(null); });
+
+  document.addEventListener("click", async function (e) {
+    var t = e.target;
+    if (t.dataset.editPost) {
+      openPost(state.posts.filter(function (p) { return p.id === t.dataset.editPost; })[0]);
+    }
+    if (t.dataset.delPost) {
+      var p = state.posts.filter(function (x) { return x.id === t.dataset.delPost; })[0];
+      if (!p) return;
+      if (!confirm('Delete "' + p.title + '"? This cannot be undone.')) return;
+      try { await api("/api/admin/posts/" + p.id, { method: "DELETE" }); await loadAll(); toast("Post deleted"); }
+      catch (err) { toast(err.message, true); }
+    }
+    if (t.dataset.editProject) {
+      openProject(state.projects.filter(function (p) { return p.id === t.dataset.editProject; })[0]);
+    }
+    if (t.dataset.delProject) {
+      var j = state.projects.filter(function (x) { return x.id === t.dataset.delProject; })[0];
+      if (!j) return;
+      if (!confirm('Delete "' + j.title + '"? This cannot be undone.')) return;
+      try { await api("/api/admin/projects/" + j.id, { method: "DELETE" }); await loadAll(); toast("Project deleted"); }
+      catch (err) { toast(err.message, true); }
+    }
+  });
+
+  $("p-cover").addEventListener("change", async function () {
+    var f = this.files && this.files[0];
+    if (!f) return;
+    var fd = new FormData();
+    fd.append("image", f);
+    try {
+      var res = await fetch("/api/admin/upload", { method: "POST", credentials: "same-origin", body: fd });
+      var data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Upload failed");
+      state.cover = data.url;
+      renderCover();
+      toast("Image uploaded");
+    } catch (err) { toast(err.message, true); }
+    this.value = "";
+  });
+
+  /* ================= markdown editor ================= */
+
+  function fire(t) { t.dispatchEvent(new Event("input", { bubbles: true })); }
+
+  function selectRange(t, start, end) {
+    t.focus();
+    t.setSelectionRange(start, end);
+  }
+
+  /** Wrap the selection, or drop in a placeholder and select it so the next
+   *  keystroke replaces it. */
+  function wrap(t, before, after, placeholder) {
+    var s = t.selectionStart, e = t.selectionEnd;
+    var had = t.value.slice(s, e);
+    var sel = had || placeholder;
+    t.setRangeText(before + sel + after, s, e, "end");
+    fire(t);
+    selectRange(t, s + before.length, s + before.length + sel.length);
+  }
+
+  /** Toggle a prefix on every line the selection touches. */
+  function linePrefix(t, prefix) {
+    var s = t.selectionStart, e = t.selectionEnd, v = t.value;
+    var ls = v.lastIndexOf("\n", s - 1) + 1;
+    var le = v.indexOf("\n", e);
+    if (le === -1) le = v.length;
+
+    var lines = v.slice(ls, le).split("\n");
+    var allPrefixed = lines.every(function (l) { return l.indexOf(prefix) === 0; });
+    var out = lines.map(function (l) {
+      return allPrefixed ? l.slice(prefix.length) : prefix + l;
+    }).join("\n");
+
+    t.setRangeText(out, ls, le, "end");
+    fire(t);
+    selectRange(t, ls, ls + out.length);
+  }
+
+  function insert(t, text) {
+    t.setRangeText(text, t.selectionStart, t.selectionEnd, "end");
+    fire(t);
+  }
+
+  function fence(t) {
+    var s = t.selectionStart, e = t.selectionEnd;
+    var sel = t.value.slice(s, e) || "code";
+    t.setRangeText("\n```\n" + sel + "\n```\n", s, e, "end");
+    fire(t);
+  }
+
+  function link(t) {
+    var s = t.selectionStart, e = t.selectionEnd;
+    var sel = t.value.slice(s, e) || "link text";
+    var url = window.prompt("Link URL", "https://");
+    if (url === null) return;
+    t.setRangeText("[" + sel + "](" + url + ")", s, e, "end");
+    fire(t);
+  }
+
+  /** Inserts the image and parks the caret inside the caption quotes, so a
+   *  caption is one keystroke away rather than something you forget. */
+  function insertImage(t, url) {
+    var s = t.selectionStart;
+    var text = '\n\n![](' + url + ' "")\n\n';
+    t.setRangeText(text, s, t.selectionEnd, "end");
+    fire(t);
+    var capPos = s + text.indexOf('""') + 1;
+    selectRange(t, capPos, capPos);
+  }
+
+  async function uploadImage(file) {
+    var fd = new FormData();
+    fd.append("image", file);
+    var res = await fetch("/api/admin/upload", { method: "POST", credentials: "same-origin", body: fd });
+    var data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Upload failed");
+    return data.url;
+  }
+
+  var hiddenFile = $("hiddenFile");
+  var fileTarget = null;
+
+  function pickFile(t) { fileTarget = t; hiddenFile.click(); }
+
+  hiddenFile.addEventListener("change", async function () {
+    var files = Array.prototype.slice.call(this.files || []);
+    this.value = "";
+    if (!files.length || !fileTarget) return;
+    for (var i = 0; i < files.length; i++) {
+      try {
+        insertImage(fileTarget, await uploadImage(files[i]));
+      } catch (err) { toast(err.message, true); }
+    }
+    toast(files.length > 1 ? files.length + " images inserted" : "Image inserted");
+  });
+
+  var TOOLS = [
+    { label: "H2", title: "Heading", fn: function (t) { linePrefix(t, "## "); } },
+    { label: "H3", title: "Subheading", fn: function (t) { linePrefix(t, "### "); } },
+    { sep: true },
+    { html: "<b>B</b>", title: "Bold  (⌘B)", fn: function (t) { wrap(t, "**", "**", "bold text"); } },
+    { html: "<i>I</i>", title: "Italic  (⌘I)", fn: function (t) { wrap(t, "*", "*", "italic text"); } },
+    { label: "Link", title: "Link  (⌘K)", fn: link },
+    { sep: true },
+    { label: "• List", title: "Bullet list", fn: function (t) { linePrefix(t, "- "); } },
+    { label: "1. List", title: "Numbered list", fn: function (t) { linePrefix(t, "1. "); } },
+    { label: "❝", title: "Blockquote", fn: function (t) { linePrefix(t, "> "); } },
+    { sep: true },
+    { html: '<span class="mono-lbl">`</span>', title: "Inline code", fn: function (t) { wrap(t, "`", "`", "code"); } },
+    { html: '<span class="mono-lbl">```</span>', title: "Code block", fn: fence },
+    { label: "—", title: "Divider", fn: function (t) { insert(t, "\n\n---\n\n"); } },
+    { sep: true },
+    { label: "Image", title: "Upload and insert an image", fn: pickFile },
+    { label: "Library", title: "Insert a previously uploaded image", fn: function (t) { openLibrary(t); } }
+  ];
+
+  var previewTimers = new WeakMap();
+
+  function schedulePreview(t) {
+    clearTimeout(previewTimers.get(t));
+    previewTimers.set(t, setTimeout(function () { renderPreview(t); }, 450));
+  }
+
+  async function renderPreview(t) {
+    var box = document.querySelector('[data-preview-for="' + t.id + '"]');
+    if (!box) return;
+    var split = t.closest(".split");
+    if (!split || !split.classList.contains("on")) return;
+    try {
+      var r = await api("/api/admin/preview", { method: "POST", body: { bodyMd: t.value } });
+      box.innerHTML = r.html;
+    } catch (err) {
+      /* keep the last good render rather than blanking the pane mid-typing */
+    }
+  }
+
+  function updateCount(t) {
+    var el = document.querySelector('.toolbar[data-for="' + t.id + '"] .count');
+    if (!el) return;
+    var w = t.value.trim() ? t.value.trim().split(/\s+/).length : 0;
+    el.textContent = w + (w === 1 ? " word" : " words") + " · " + Math.max(1, Math.round(w / 200)) + " min";
+  }
+
+  function attachDropPaste(editorEl, t) {
+    if (!editorEl) return;
+    ["dragenter", "dragover"].forEach(function (ev) {
+      editorEl.addEventListener(ev, function (e) { e.preventDefault(); editorEl.classList.add("drop"); });
+    });
+    ["dragleave", "dragend", "drop"].forEach(function (ev) {
+      editorEl.addEventListener(ev, function () { editorEl.classList.remove("drop"); });
+    });
+
+    editorEl.addEventListener("drop", async function (e) {
+      var files = Array.prototype.filter.call(
+        (e.dataTransfer && e.dataTransfer.files) || [],
+        function (f) { return /^image\//.test(f.type); }
+      );
+      if (!files.length) return;
+      e.preventDefault();
+      for (var i = 0; i < files.length; i++) {
+        try { insertImage(t, await uploadImage(files[i])); } catch (err) { toast(err.message, true); }
+      }
+      updateCount(t); schedulePreview(t);
+      toast(files.length > 1 ? files.length + " images inserted" : "Image inserted");
+    });
+
+    t.addEventListener("paste", async function (e) {
+      var items = (e.clipboardData && e.clipboardData.items) || [];
+      for (var i = 0; i < items.length; i++) {
+        if (items[i].kind === "file" && /^image\//.test(items[i].type)) {
+          e.preventDefault();
+          try {
+            insertImage(t, await uploadImage(items[i].getAsFile()));
+            toast("Image uploaded");
+          } catch (err) { toast(err.message, true); }
+          updateCount(t); schedulePreview(t);
+          return;
+        }
+      }
+    });
+  }
+
+  function buildEditors() {
+    Array.prototype.forEach.call(document.querySelectorAll(".toolbar[data-for]"), function (bar) {
+      if (bar.dataset.built) return;
+      var t = $(bar.getAttribute("data-for"));
+      if (!t) return;
+      bar.dataset.built = "1";
+
+      TOOLS.forEach(function (tool) {
+        if (tool.sep) {
+          var s = document.createElement("span");
+          s.className = "sep";
+          bar.appendChild(s);
+          return;
+        }
+        var b = document.createElement("button");
+        b.type = "button";
+        b.title = tool.title;
+        b.innerHTML = tool.html || tool.label;
+        b.addEventListener("click", function () {
+          tool.fn(t);
+          updateCount(t);
+          schedulePreview(t);
+        });
+        bar.appendChild(b);
+      });
+
+      var pv = document.createElement("button");
+      pv.type = "button";
+      pv.textContent = "Preview";
+      pv.title = "Toggle live preview";
+      pv.setAttribute("aria-pressed", "false");
+      pv.addEventListener("click", function () {
+        var on = t.closest(".split").classList.toggle("on");
+        pv.setAttribute("aria-pressed", String(on));
+        if (on) renderPreview(t);
+      });
+      bar.appendChild(pv);
+
+      var count = document.createElement("span");
+      count.className = "count";
+      bar.appendChild(count);
+
+      t.addEventListener("input", function () { updateCount(t); schedulePreview(t); });
+
+      t.addEventListener("keydown", function (e) {
+        if (!(e.metaKey || e.ctrlKey) || e.altKey) return;
+        var k = e.key.toLowerCase();
+        if (k === "b") { e.preventDefault(); wrap(t, "**", "**", "bold text"); }
+        else if (k === "i") { e.preventDefault(); wrap(t, "*", "*", "italic text"); }
+        else if (k === "k") { e.preventDefault(); link(t); }
+        else return;
+        updateCount(t); schedulePreview(t);
+      });
+
+      attachDropPaste(t.closest("[data-editor]"), t);
+      updateCount(t);
+    });
+  }
+
+  /* ---------- image library ---------- */
+
+  var libTarget = null;
+
+  async function openLibrary(t) {
+    libTarget = t;
+    $("libModal").classList.remove("hidden");
+    await refreshLibrary();
+  }
+
+  function closeLibrary() { $("libModal").classList.add("hidden"); }
+
+  async function refreshLibrary() {
+    var grid = $("libGrid");
+    grid.innerHTML = '<p class="empty">Loading…</p>';
+    try {
+      var files = await api("/api/admin/uploads");
+      grid.innerHTML = files.length
+        ? files.map(function (f) {
+            return '<figure>' +
+              '<img src="' + esc(f.url) + '" alt="' + esc(f.name) + '" data-pick="' + esc(f.url) + '" title="Insert this image">' +
+              '<figcaption>' + esc(f.name) + '</figcaption>' +
+              '<button class="del" type="button" data-delimg="' + esc(f.name) + '">Delete</button>' +
+            '</figure>';
+          }).join("")
+        : '<p class="empty">Nothing uploaded yet.</p>';
+    } catch (err) {
+      grid.innerHTML = '<p class="empty">' + esc(err.message) + '</p>';
+    }
+  }
+
+  $("libGrid").addEventListener("click", async function (e) {
+    var el = e.target;
+    if (el.dataset.pick && libTarget) {
+      insertImage(libTarget, el.dataset.pick);
+      closeLibrary();
+      updateCount(libTarget);
+      schedulePreview(libTarget);
+      return;
+    }
+    if (el.dataset.delimg) {
+      if (!confirm("Delete " + el.dataset.delimg + "?\n\nAny post already using it will show a broken image.")) return;
+      try {
+        await api("/api/admin/uploads/" + encodeURIComponent(el.dataset.delimg), { method: "DELETE" });
+        await refreshLibrary();
+        toast("Image deleted");
+      } catch (err) { toast(err.message, true); }
+    }
+  });
+
+  $("libClose").addEventListener("click", closeLibrary);
+  $("libUpload").addEventListener("click", function () { if (libTarget) pickFile(libTarget); });
+  $("libModal").addEventListener("click", function (e) { if (e.target === this) closeLibrary(); });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && !$("libModal").classList.contains("hidden")) closeLibrary();
+  });
+
+  $("postForm").addEventListener("submit", async function (e) {
+    e.preventDefault();
+    var body = {
+      title: $("p-title").value,
+      dek: $("p-dek").value,
+      bodyMd: $("p-body").value,
+      slug: $("p-slug").value,
+      category: $("p-category").value,
+      status: $("p-status").value,
+      projectSlug: $("p-project").value,
+      cover: state.cover
+    };
+    try {
+      if (state.editingPost) await api("/api/admin/posts/" + state.editingPost, { method: "PUT", body: body });
+      else await api("/api/admin/posts", { method: "POST", body: body });
+      await loadAll();
+      toast("Post saved");
+      showTab("posts");
+    } catch (err) { toast(err.message, true); }
+  });
+
+  /* ---------- projects ---------- */
+
+  function renderProjects() {
+    var tb = $("projectRows");
+    var LABEL = { sw: "Software", hw: "Hardware", ml: "Machine Learning" };
+    if (!state.projects.length) {
+      tb.innerHTML = '<tr><td colspan="6" class="empty">No projects yet.</td></tr>';
+      return;
+    }
+    tb.innerHTML = state.projects.map(function (j) {
+      return '<tr>' +
+        '<td class="t">' + esc(j.title) + '<small>/' + esc(j.slug) + '</small></td>' +
+        '<td>' + (LABEL[j.domain] || j.domain) + '</td>' +
+        '<td>' + j.year + '</td>' +
+        '<td>' + esc(j.metric) + '</td>' +
+        '<td><span class="pill ' + j.status + '">' + j.status + '</span></td>' +
+        '<td><div class="rowacts">' +
+          '<button class="link" data-edit-project="' + j.id + '">Edit</button>' +
+          '<button class="link" data-del-project="' + j.id + '">Delete</button>' +
+        '</div></td></tr>';
+    }).join("");
+  }
+
+  function specRow(k, v) {
+    var d = document.createElement("div");
+    d.className = "specrow";
+    d.innerHTML = '<input placeholder="Label" value="' + esc(k || "") + '">' +
+                  '<input placeholder="Value" value="' + esc(v || "") + '">' +
+                  '<button type="button" aria-label="Remove row">×</button>';
+    d.querySelector("button").addEventListener("click", function () { d.remove(); });
+    return d;
+  }
+
+  $("addSpec").addEventListener("click", function () { $("specList").appendChild(specRow("", "")); });
+
+  function openProject(j) {
+    state.editingProject = j ? j.id : null;
+    $("projectEditTitle").textContent = j ? "Edit project" : "New project";
+    $("j-title").value = j ? j.title : "";
+    $("j-headline").value = j ? j.headline : "";
+    $("j-dek").value = j ? j.dek : "";
+    $("j-body").value = j ? (j.bodyMd || "") : "";
+    $("j-slug").value = j ? j.slug : "";
+    $("j-domain").value = j ? j.domain : "sw";
+    $("j-year").value = j ? j.year : new Date().getFullYear();
+    $("j-state").value = j ? j.state : "Active";
+    $("j-metric").value = j ? j.metric : "";
+    $("j-metricKey").value = j ? j.metricKey : "";
+    $("j-plate").value = j && j.plate ? j.plate : "";
+    $("j-status").value = j ? j.status : "published";
+
+    var list = $("specList");
+    list.innerHTML = "";
+    ((j && j.spec) || [["", ""]]).forEach(function (r) { list.appendChild(specRow(r[0], r[1])); });
+
+    showTab("projectEdit");
+    buildEditors();
+    updateCount($("j-body"));
+    renderPreview($("j-body"));
+  }
+
+  $("newProject").addEventListener("click", function () { openProject(null); });
+
+  $("projectForm").addEventListener("submit", async function (e) {
+    e.preventDefault();
+    var spec = Array.prototype.map.call($("specList").querySelectorAll(".specrow"), function (row) {
+      var i = row.querySelectorAll("input");
+      return [i[0].value, i[1].value];
+    }).filter(function (r) { return r[0].trim(); });
+
+    var body = {
+      title: $("j-title").value, headline: $("j-headline").value, dek: $("j-dek").value,
+      bodyMd: $("j-body").value, slug: $("j-slug").value, domain: $("j-domain").value,
+      year: $("j-year").value, state: $("j-state").value, metric: $("j-metric").value,
+      metricKey: $("j-metricKey").value, plate: $("j-plate").value,
+      status: $("j-status").value, spec: spec
+    };
+    try {
+      if (state.editingProject) await api("/api/admin/projects/" + state.editingProject, { method: "PUT", body: body });
+      else await api("/api/admin/projects", { method: "POST", body: body });
+      await loadAll();
+      toast("Project saved");
+      showTab("projects");
+    } catch (err) { toast(err.message, true); }
+  });
+
+  /* ---------- theme ---------- */
+
+  $("themeBtn").addEventListener("click", function () {
+    var root = document.documentElement;
+    var cur = root.getAttribute("data-theme") ||
+      (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    root.setAttribute("data-theme", cur === "dark" ? "light" : "dark");
+  });
+
+  /* ---------- boot ---------- */
+
+  (async function () {
+    try {
+      var me = await api("/api/auth/me");
+      $("whoami").textContent = me.user.username;
+      showApp();
+      await loadAll();
+      showTab("posts");
+    } catch (err) {
+      showLogin();
+    }
+  })();
+})();
+</script>
+</body>
+</html>

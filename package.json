@@ -1,0 +1,23 @@
+{
+  "name": "bench",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Bench — projects and writing, with an admin panel",
+  "type": "commonjs",
+  "main": "server/server.js",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "start": "node server/server.js",
+    "dev": "node --watch server/server.js",
+    "seed": "node server/seed.js",
+    "build": "node build.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cookie-parser": "^1.4.6",
+    "express": "^4.21.0",
+    "marked": "^14.1.2",
+    "mongodb": "^6.9.0",
+    "multer": "^2.0.2"
+  }
+}

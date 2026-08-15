@@ -1,0 +1,1332 @@
+<title>Bench — Projects &amp; Writing</title>
+
+<style>
+/* ============================================================
+   EDITORIAL — black-and-white magazine.
+   One typeface family, two blocks (white ground / black block),
+   one heavy rule. No colour anywhere: hierarchy is scale,
+   italic, and rule weight.
+   ============================================================ */
+
+:root {
+  --bg:       #FFFFFF;
+  --ink:      #000000;   /* headlines, rules, the block                  */
+  --text:     #16161A;   /* running prose — softened off true black      */
+  --muted:    #6E6E73;   /* bylines, captions                            */
+  --hairline: #D8D8D8;
+  --plate-bg: #F2F2F2;   /* the image slot ground                        */
+  --block-bg: #000000;
+  --block-fg: #FFFFFF;
+  --block-muted: #B4B4B8;
+  --block-line:  #3A3A3A;
+
+  /* High-contrast display serif for the big statements, a sturdier
+     old-style for anything you actually read. All system-resident —
+     the CSP blocks font CDNs, so a linked webfont would fall back
+     silently and lose the whole character of the page. */
+  /* Sturdy transitional, NOT a Didone. Didot's hairlines go spindly at display
+     size and read fashion-magazine; the reference has bracketed serifs and only
+     moderate stroke contrast. */
+  --display: "Playfair Display", "Hoefler Text", Baskerville, "Times New Roman", Georgia, serif;
+  --serif: "Iowan Old Style", Charter, "Sitka Text", "Palatino Linotype", Palatino, Georgia, serif;
+  --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+
+  --t-11: clamp(.6875rem,  .668rem  + .082vw,  .75rem);
+  --t-13: clamp(.8125rem,  .793rem  + .082vw,  .875rem);
+  --t-15: clamp(.9375rem,  .918rem  + .082vw,  1rem);
+  --t-17: clamp(1.0625rem, 1.043rem + .082vw,  1.125rem);
+  --t-19: clamp(1.1875rem, 1.149rem + .164vw,  1.3125rem);
+  --t-23: clamp(1.375rem,  1.31rem  + .27vw,   1.5625rem);
+  --t-28: clamp(1.625rem,  1.5rem   + .53vw,   2rem);
+  --t-40: clamp(2rem,      1.75rem  + 1.05vw,  2.75rem);
+  --t-64: clamp(2.5rem,    1.6rem   + 3.8vw,   5.25rem);
+
+  --lead: calc(var(--t-19) * 1.62);
+  --page: 76rem;
+  --measure: 38rem;
+  --pad: clamp(1.25rem, 4vw, 3.25rem);
+  --ease: cubic-bezier(.22, 1, .36, 1);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg:       #0A0A0A;
+    --ink:      #FFFFFF;
+    --text:     #ECECEE;
+    --muted:    #9A9AA0;
+    --hairline: #2C2C2E;
+    --plate-bg: #151517;
+    --block-bg: #FFFFFF;   /* the block inverts — it stays a block */
+    --block-fg: #0A0A0A;
+    --block-muted: #55555A;
+    --block-line:  #C9C9CE;
+  }
+}
+
+:root[data-theme="light"] {
+  --bg: #FFFFFF; --ink: #000000; --text: #16161A; --muted: #6E6E73;
+  --hairline: #D8D8D8; --plate-bg: #F2F2F2;
+  --block-bg: #000000; --block-fg: #FFFFFF; --block-muted: #B4B4B8; --block-line: #3A3A3A;
+}
+:root[data-theme="dark"] {
+  --bg: #0A0A0A; --ink: #FFFFFF; --text: #ECECEE; --muted: #9A9AA0;
+  --hairline: #2C2C2E; --plate-bg: #151517;
+  --block-bg: #FFFFFF; --block-fg: #0A0A0A; --block-muted: #55555A; --block-line: #C9C9CE;
+}
+
+:root { color-scheme: light; }
+@media (prefers-color-scheme: dark) { :root { color-scheme: dark; } }
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"]  { color-scheme: dark; }
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--serif);
+  font-size: var(--t-19);
+  line-height: 1.62;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: inherit; }
+
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+
+.wrap { max-width: var(--page); margin-inline: auto; padding-inline: var(--pad); }
+
+/* ---------------- masthead block ---------------- */
+
+.masthead { background: var(--block-bg); color: var(--block-fg); }
+
+/* Two stacked rows: utilities pinned at the top of the block, the wordmark
+   centred in the space below. NOT one baseline-aligned row — that is what
+   made the block read as a toolbar instead of a masthead. */
+.mast-top { padding-block: 1.5rem 3.25rem; }
+
+.mast-util {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 3.25rem;
+}
+
+.social { display: flex; align-items: center; gap: 1.375rem; padding-top: .625rem; }
+.social a { color: var(--block-fg); display: block; transition: opacity 160ms var(--ease); }
+.social a:hover { opacity: .58; }
+.social svg { display: block; }
+
+.wordmark {
+  display: block;
+  text-align: center;
+  font-family: var(--display);
+  font-size: clamp(2.5rem, 6.5vw, 5rem);
+  line-height: 1.05;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  text-decoration: none;
+  font-weight: 400;
+  margin-top: 1.75rem;
+}
+
+.mast-search {
+  display: flex;
+  width: min(21rem, 42vw);
+  background: var(--bg);
+}
+.mast-search input {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--serif);
+  font-size: var(--t-17);
+  color: var(--ink);
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  padding: .8rem 1rem;
+}
+.mast-search input::placeholder { color: var(--muted); opacity: 1; }
+.mast-search button {
+  flex: 0 0 auto;
+  width: 3.1rem;
+  background: var(--block-bg);
+  color: var(--block-fg);
+  border: 0;
+  border-radius: 0;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+.mast-search button:hover { opacity: .82; }
+
+.mast-nav { border-top: 1px solid var(--block-line); }
+.mast-nav ul {
+  list-style: none;
+  margin: 0;
+  padding: 1.4rem 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: .6rem 2.75rem;
+  position: relative;
+}
+.mast-nav li.nav-end { position: absolute; right: 0; }
+@media (max-width: 700px) {
+  .mast-nav li.nav-end { position: static; }
+}
+.mast-nav a {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: var(--t-17);
+  text-decoration: none;
+  padding-bottom: 2px;
+  border-bottom: 1px solid transparent;
+  transition: border-color 160ms var(--ease);
+}
+.mast-nav a:hover { border-bottom-color: var(--block-fg); }
+.mast-nav a[aria-current="page"] { border-bottom-color: var(--block-fg); }
+
+@media (max-width: 560px) {
+  .mast-top { padding-block: 1.25rem 2.25rem; }
+  .mast-util { min-height: 0; }
+  .social { gap: 1.125rem; }
+  .mast-search { width: 10.5rem; }
+  .mast-search input { padding: .55rem .7rem; font-size: var(--t-15); }
+  .mast-search button { width: 2.4rem; }
+  .wordmark { margin-top: 1.5rem; }
+}
+
+/* ---------------- section heads ---------------- */
+
+.band { padding-block: 3.5rem; }
+.band + .band { padding-top: 0; }
+
+.sec-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 2px solid var(--ink);
+  padding-bottom: .45rem;
+  margin-bottom: 2.25rem;
+}
+.sec-head h2 {
+  font-family: var(--serif);
+  font-size: var(--t-23);
+  font-weight: 400;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  margin: 0;
+  color: var(--ink);
+}
+.sec-head a {
+  font-style: italic;
+  font-size: var(--t-15);
+  color: var(--muted);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.sec-head a:hover { color: var(--ink); }
+
+/* ---------------- cards ---------------- */
+
+.card { display: block; text-decoration: none; color: inherit; }
+
+.card-img {
+  background: var(--plate-bg);
+  aspect-ratio: 3 / 2;
+  overflow: hidden;
+  margin-bottom: .875rem;
+  position: relative;
+}
+.card-img svg { display: block; width: 100%; height: 100%; color: var(--ink); }
+.card:hover .card-img { opacity: .82; }
+.card-img { transition: opacity 200ms var(--ease); }
+
+.eyebrow {
+  font-style: italic;
+  font-size: var(--t-15);
+  color: var(--text);
+  margin: 0 0 .35rem;
+}
+.card h3 {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: var(--t-23);
+  line-height: 1.24;
+  margin: 0 0 .5rem;
+  color: var(--ink);
+  text-wrap: balance;
+}
+.card:hover h3 { text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+.byline { font-size: var(--t-15); color: var(--muted); margin: 0; }
+.card p.dek { font-size: var(--t-17); line-height: 1.55; margin: 0 0 .75rem; color: var(--text); }
+
+/* LATEST: one hero beside a 2×2 of secondaries */
+.latest {
+  display: grid;
+  grid-template-columns: 1.55fr 1fr 1fr;
+  gap: 2.5rem 2rem;
+}
+.latest .lead-card { grid-row: span 2; }
+.latest .lead-card h3 { font-size: var(--t-40); line-height: 1.14; }
+.latest .lead-card .card-img { aspect-ratio: 4 / 3; }
+
+@media (max-width: 900px) {
+  .latest { grid-template-columns: 1fr 1fr; }
+  .latest .lead-card { grid-row: auto; grid-column: 1 / -1; }
+}
+@media (max-width: 560px) {
+  .latest { grid-template-columns: 1fr; gap: 2.25rem; }
+}
+
+/* even grids */
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2.25rem 2rem; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2.75rem 2rem; }
+@media (max-width: 1000px) { .grid-4 { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 860px)  { .grid-3 { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px)  { .grid-4, .grid-3 { grid-template-columns: 1fr; } }
+
+/* ---------------- filter row ---------------- */
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem 2rem;
+  align-items: baseline;
+  border-bottom: 1px solid var(--hairline);
+  padding-bottom: .9rem;
+  margin-bottom: 2.25rem;
+}
+.filters button {
+  background: none;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  padding: 0 0 2px;
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: var(--t-17);
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 140ms var(--ease), border-color 140ms var(--ease);
+}
+.filters button:hover { color: var(--ink); }
+.filters button[aria-pressed="true"] { color: var(--ink); border-bottom-color: var(--ink); }
+
+/* ---------------- detail pages ---------------- */
+
+.article-head { max-width: 46rem; margin-inline: auto; text-align: center; padding-block: 3.5rem 0; }
+.article-head .eyebrow { font-size: var(--t-17); }
+.article-head h1 {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: var(--t-40);
+  line-height: 1.14;
+  margin: .35rem 0 1rem;
+  color: var(--ink);
+  text-wrap: balance;
+}
+.article-head .byline { font-size: var(--t-15); }
+
+.hero-figure { margin: 2.5rem 0 0; }
+.hero-figure .card-img { aspect-ratio: 2 / 1; margin: 0; }
+.hero-figure figcaption {
+  font-size: var(--t-13);
+  font-style: italic;
+  color: var(--muted);
+  padding-top: .625rem;
+  text-align: center;
+}
+
+.prose { max-width: var(--measure); margin-inline: auto; padding-block: 2.5rem 1rem; }
+.prose p { margin: 0 0 var(--lead); }
+/* :first-child, not :first-of-type — otherwise a post that opens with an image
+   or a heading drops a cap on some paragraph halfway down the page. */
+.prose > p:first-child::first-letter {
+  float: left;
+  font-family: var(--display);
+  font-size: 3.9em;
+  line-height: .82;
+  padding: .04em .08em 0 0;
+  color: var(--ink);
+}
+.prose h2 {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: var(--t-28);
+  line-height: 1.2;
+  margin: calc(var(--lead) * 1.5) 0 .75rem;
+  color: var(--ink);
+}
+.prose blockquote {
+  margin: var(--lead) 0;
+  padding: 0 0 0 1.25rem;
+  border-left: 2px solid var(--ink);
+  font-style: italic;
+  font-size: var(--t-23);
+  line-height: 1.4;
+  color: var(--ink);
+}
+/* ---- authored body content ----
+   Everything the editor can produce has to land somewhere deliberate here,
+   or a post with an image and a list quietly looks broken. */
+
+.prose a { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; text-decoration-thickness: 1px; }
+.prose a:hover { text-decoration-thickness: 2px; }
+
+.prose ul:not(.spec), .prose ol { margin: 0 0 var(--lead); padding-left: 1.4rem; }
+.prose li { margin-bottom: .35rem; }
+.prose li::marker { color: var(--muted); }
+
+.prose hr { border: 0; border-top: 1px solid var(--ink); width: 4rem; margin: calc(var(--lead) * 1.5) auto; }
+
+.prose code { font-family: var(--mono); font-size: .86em; background: var(--plate-bg); padding: .12em .34em; }
+.prose pre { background: var(--plate-bg); padding: 1.125rem 1.25rem; overflow-x: auto; margin: var(--lead) 0; }
+.prose pre code { background: none; padding: 0; font-size: var(--t-13); line-height: 1.6; }
+
+/* A wide table must scroll inside itself — the page body never scrolls sideways. */
+.prose table { display: block; width: max-content; max-width: 100%; overflow-x: auto; border-collapse: collapse; margin: var(--lead) 0; font-size: var(--t-15); }
+.prose th, .prose td { text-align: left; padding: .5rem 1.25rem .5rem 0; border-bottom: 1px solid var(--hairline); }
+.prose th { font-style: italic; font-weight: 400; color: var(--muted); }
+
+/* Figures. The renderer turns every Markdown image into one of these, so a
+   captioned image is the default rather than a special case. */
+.prose .fig { margin: calc(var(--lead) * 1.25) 0; }
+.prose .fig img { display: block; width: 100%; height: auto; }
+.prose .fig figcaption {
+  font-size: var(--t-13); font-style: italic; color: var(--muted);
+  padding-top: .5rem; margin-top: .5rem; border-top: 1px solid var(--hairline);
+}
+
+/* Break out of the reading measure. margin-left:50% puts the left edge at the
+   container's centre; the transform pulls it back by half its own width. */
+.prose .fig--wide { width: min(46rem, 92vw); margin-left: 50%; transform: translateX(-50%); }
+.prose .fig--full { width: min(88rem, 94vw); margin-left: 50%; transform: translateX(-50%); }
+@media (max-width: 700px) {
+  .prose .fig--wide, .prose .fig--full { width: 100%; margin-left: 0; transform: none; }
+}
+
+.prose ul.spec { list-style: none; margin: var(--lead) 0; padding: 0; border-top: 1px solid var(--hairline); }
+.prose ul.spec li {
+  display: flex;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: .55rem 0;
+  border-bottom: 1px solid var(--hairline);
+  font-size: var(--t-15);
+}
+.prose ul.spec .k { font-style: italic; color: var(--muted); }
+.prose ul.spec .v { font-variant-numeric: tabular-nums; color: var(--ink); }
+
+.codewrap { max-width: 46rem; margin: var(--lead) auto; overflow-x: auto; background: var(--plate-bg); padding: 1.125rem 1.25rem; }
+.codewrap pre { margin: 0; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: var(--t-13); line-height: 1.6; color: var(--text); }
+
+.backline { border-top: 1px solid var(--hairline); margin-top: 3rem; padding-top: 1.25rem; text-align: center; }
+.backline a { font-style: italic; color: var(--muted); text-decoration: none; }
+.backline a:hover { color: var(--ink); }
+
+/* ---------------- contact form ---------------- */
+
+.corr { max-width: 34rem; display: flex; flex-direction: column; gap: 1.5rem; }
+.field { display: flex; flex-direction: column; gap: .3rem; }
+.field label { font-style: italic; font-size: var(--t-15); color: var(--muted); }
+.field.sel { position: relative; }
+.field.sel::after {
+  content: "▾"; position: absolute; right: .3rem; bottom: .5rem;
+  color: var(--muted); pointer-events: none; font-size: var(--t-13);
+}
+.corr input, .corr select, .corr textarea {
+  font-family: var(--serif);
+  font-size: var(--t-17);
+  color: var(--text);
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--ink);
+  border-radius: 0;
+  padding: .4rem 0;
+  width: 100%;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.corr textarea { border: 1px solid var(--ink); padding: .75rem .875rem; resize: vertical; min-height: 8rem; line-height: 1.55; }
+.corr-foot { display: flex; align-items: center; flex-wrap: wrap; gap: .875rem 1.25rem; }
+.send {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: var(--t-17);
+  background: var(--block-bg);
+  color: var(--block-fg);
+  border: 0;
+  border-radius: 0;
+  padding: .6rem 1.75rem;
+  cursor: pointer;
+}
+.send:hover { opacity: .85; }
+.send[disabled] { opacity: .5; cursor: default; }
+.corr-note { font-style: italic; font-size: var(--t-15); color: var(--muted); }
+
+.channels { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--hairline); }
+.channels li {
+  display: flex; justify-content: space-between; gap: 1.5rem;
+  padding: .6rem 0; border-bottom: 1px solid var(--hairline); font-size: var(--t-15);
+}
+.channels .k { font-style: italic; color: var(--muted); }
+
+/* ---------------- footer ---------------- */
+
+.subjects { border-top: 2px solid var(--ink); padding-block: 2.5rem 3.5rem; }
+.subjects p {
+  font-family: var(--display);
+  font-size: var(--t-64);
+  line-height: 1.06;
+  margin: 0;
+  color: var(--ink);
+  text-wrap: balance;
+}
+
+.endblock { background: var(--block-bg); color: var(--block-fg); padding-block: 4rem 3rem; }
+.endblock .statement {
+  max-width: 34rem;
+  margin: 0 auto;
+  text-align: center;
+  font-size: var(--t-19);
+  line-height: 1.6;
+}
+.sub-head { text-align: center; margin: 3.25rem 0 1.25rem; font-size: var(--t-19); }
+.subscribe { display: flex; max-width: 30rem; margin-inline: auto; }
+.subscribe input {
+  flex: 1; min-width: 0;
+  font-family: var(--serif); font-size: var(--t-17);
+  color: var(--ink); background: var(--bg);
+  border: 0; border-radius: 0; padding: .75rem .875rem;
+}
+.subscribe button {
+  background: var(--block-bg); color: var(--block-fg);
+  border: 1px solid var(--block-line); border-left: 0; border-radius: 0;
+  padding: 0 1.1rem; cursor: pointer; font-size: var(--t-19);
+}
+.subscribe button:hover { background: var(--block-line); }
+.sub-note { text-align: center; font-style: italic; font-size: var(--t-13); color: var(--block-muted); margin: .875rem 0 0; }
+
+.end-social { display: flex; justify-content: center; gap: 1.5rem; margin-top: 3rem; }
+.end-social a { color: var(--block-fg); opacity: .9; }
+.end-social a:hover { opacity: .55; }
+
+.end-links {
+  display: flex; justify-content: center; flex-wrap: wrap; gap: .5rem 2.25rem;
+  margin-top: 1.75rem; list-style: none; padding: 0;
+}
+.end-links a { font-style: italic; font-size: var(--t-15); text-decoration: none; }
+.end-links a:hover { text-decoration: underline; }
+
+.colophon-line {
+  text-align: center; font-size: var(--t-13); font-style: italic;
+  color: var(--muted); padding-block: 1.5rem; border-top: 1px solid var(--hairline);
+}
+
+/* ---------------- views ---------------- */
+
+.view { display: none; }
+.view.is-on { display: block; animation: fade 260ms var(--ease); }
+@keyframes fade { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+
+.theme-btn {
+  background: none; border: 0; color: var(--block-fg);
+  cursor: pointer; font-size: 1.05rem; line-height: 1; padding: 2px 4px;
+  transition: transform 240ms var(--ease), opacity 140ms var(--ease);
+}
+.theme-btn:hover { opacity: .55; }
+:root[data-theme="dark"] .theme-btn { transform: rotate(180deg); }
+
+.empty { font-style: italic; color: var(--muted); padding-block: 2rem; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
+</style>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="mast-top">
+      <div class="mast-util">
+        <div class="social" id="mastSocial"></div>
+        <form class="mast-search" id="searchForm" role="search">
+          <input id="searchInput" type="search" placeholder="Search" aria-label="Search projects and writing">
+          <button type="submit" aria-label="Search">
+            <svg width="17" height="17" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7">
+              <circle cx="7.5" cy="7.5" r="5.4"/><path d="M11.6 11.6 L16.6 16.6"/>
+            </svg>
+          </button>
+        </form>
+      </div>
+      <a class="wordmark" href="#/" data-nav>Bench</a>
+    </div>
+  </div>
+  <nav class="mast-nav" aria-label="Primary">
+    <div class="wrap">
+      <ul>
+        <li><a href="#/" data-nav data-view="home">Home</a></li>
+        <li><a href="#/projects" data-nav data-view="projects">Projects</a></li>
+        <li><a href="#/blogs" data-nav data-view="blogs">Blogs</a></li>
+        <li><a href="#/about" data-nav data-view="about">About</a></li>
+        <li><a href="#/contact" data-nav data-view="contact">Contact</a></li>
+        <li class="nav-end"><button class="theme-btn" id="themeToggle" aria-label="Switch colour theme" title="Switch colour theme">◐</button></li>
+      </ul>
+    </div>
+  </nav>
+</header>
+
+<!-- ==================== HOME ==================== -->
+<main id="view-home" class="view is-on">
+  <section class="band">
+    <div class="wrap">
+      <div class="sec-head"><h2>Latest</h2><a href="#/projects" data-nav>All projects →</a></div>
+      <div class="latest" id="latestGrid"></div>
+    </div>
+  </section>
+
+  <section class="band">
+    <div class="wrap">
+      <div class="sec-head"><h2>Trending</h2><a href="#/projects" data-nav>The index →</a></div>
+      <div class="grid-4" id="trendingGrid"></div>
+    </div>
+  </section>
+
+  <section class="band">
+    <div class="wrap">
+      <div class="sec-head"><h2>From the blog</h2><a href="#/blogs" data-nav>All posts →</a></div>
+      <div class="grid-3" id="blogGrid"></div>
+    </div>
+  </section>
+</main>
+
+<!-- ==================== PROJECTS ==================== -->
+<main id="view-projects" class="view">
+  <section class="band">
+    <div class="wrap">
+      <div class="sec-head"><h2>Projects</h2><span id="projTally" class="byline"></span></div>
+      <div class="filters">
+        <button data-filter="all" aria-pressed="true">Everything</button>
+        <button data-filter="sw" aria-pressed="false">Software</button>
+        <button data-filter="hw" aria-pressed="false">Hardware</button>
+        <button data-filter="ml" aria-pressed="false">Machine Learning</button>
+      </div>
+      <div class="grid-3" id="projectGrid"></div>
+    </div>
+  </section>
+</main>
+
+<!-- ==================== BLOGS ==================== -->
+<main id="view-blogs" class="view">
+  <section class="band">
+    <div class="wrap">
+      <div class="sec-head"><h2>Blogs</h2><span id="blogTally" class="byline"></span></div>
+      <div class="grid-3" id="allBlogGrid"></div>
+    </div>
+  </section>
+</main>
+
+<!-- ==================== SEARCH ==================== -->
+<main id="view-search" class="view">
+  <section class="band">
+    <div class="wrap">
+      <div class="sec-head"><h2 id="searchHead">Search</h2><span id="searchTally" class="byline"></span></div>
+      <div class="grid-3" id="searchGrid"></div>
+    </div>
+  </section>
+</main>
+
+<!-- ==================== DETAIL ==================== -->
+<main id="view-entry" class="view">
+  <div class="wrap" id="entryBody"></div>
+</main>
+
+<!-- ==================== ABOUT ==================== -->
+<main id="view-about" class="view">
+  <div class="wrap">
+    <div class="article-head">
+      <p class="eyebrow">About</p>
+      <h1>I build things that have to survive contact with the physical world</h1>
+      <p class="byline">Compilers, telescopes, and the models that decide what they’re looking at</p>
+    </div>
+    <div class="prose">
+      <p>Bench is where the work gets written down. The name is the literal one — a bench is where a thing is
+      built, measured, and found wanting before anyone else sees it, and that is the part worth publishing.</p>
+      <p>I work across three domains that don’t usually share a portfolio. Software: compilers, build systems,
+      developer tools. Hardware: motion control, sensing, things with a bill of materials. Machine learning:
+      mostly applied, mostly on-device, mostly outdoors.</p>
+      <p>The through-line is that each one produces a claim about the physical world, and a claim needs evidence.
+      So every project here carries its own headline number in its own units — a build speedup, a tracking error
+      in arcseconds, an F1 score — and links to the writing that shows the work.</p>
+      <blockquote>A specification that does not say what it assumes is not a specification. It is a description
+      of one run.</blockquote>
+      <h2>How this is set</h2>
+      <p>Everything is one serif family: a transitional for display and an old-style for reading, with italic
+      doing the work that colour usually does. There is no second typeface and no accent hue — hierarchy comes
+      from scale, italic, and the weight of a rule.</p>
+      <p>The illustrations are hand-drawn SVG line plates rather than photographs. For hardware that is the
+      native representation anyway: a dimensioned orthographic drawing carries more than a snapshot of a
+      breadboard would.</p>
+      <ul class="spec">
+        <li><span class="k">Display</span><span class="v">Playfair / Hoefler Text</span></li>
+        <li><span class="k">Reading</span><span class="v">Iowan Old Style</span></li>
+        <li><span class="k">Measure</span><span class="v">38rem / ~66 characters</span></li>
+        <li><span class="k">Colour</span><span class="v">None</span></li>
+        <li><span class="k">Plates</span><span class="v">Inline SVG, one stroke</span></li>
+      </ul>
+    </div>
+  </div>
+</main>
+
+<!-- ==================== CONTACT ==================== -->
+<main id="view-contact" class="view">
+  <section class="band">
+    <div class="wrap">
+      <div class="sec-head"><h2>Contact</h2></div>
+      <div class="grid-3" style="align-items:start">
+        <div style="grid-column: span 2">
+          <p style="max-width:34rem;margin:0 0 2rem">Happy to hear about work that doesn’t fit neatly in one
+          domain — that’s most of the interesting work. Slowest to reply in October, when the sky is clear.</p>
+          <form class="corr" id="corrForm" novalidate>
+            <div class="field">
+              <label for="c-name">Name</label>
+              <input id="c-name" type="text" autocomplete="name">
+            </div>
+            <div class="field">
+              <label for="c-email">Reply address</label>
+              <input id="c-email" type="email" autocomplete="email">
+            </div>
+            <div class="field sel">
+              <label for="c-subject">Regarding</label>
+              <select id="c-subject">
+                <option>A project</option>
+                <option>Something in the blog</option>
+                <option>Contract or collaboration</option>
+                <option>Speaking or teaching</option>
+                <option>Something else</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="c-body">Message</label>
+              <textarea id="c-body" rows="7"></textarea>
+            </div>
+            <div class="corr-foot">
+              <button class="send" type="submit">Send</button>
+              <span class="corr-note" id="corrNote">Typically answered within a week</span>
+            </div>
+          </form>
+        </div>
+        <div>
+          <p class="eyebrow" style="margin-bottom:.75rem">Direct</p>
+          <ul class="channels">
+            <li><span class="k">Email</span><span class="v">post@example.dev</span></li>
+            <li><span class="k">GitHub</span><span class="v">@aryanpandey</span></li>
+            <li><span class="k">Mastodon</span><span class="v">@aryan@fosstodon</span></li>
+            <li><span class="k">Key</span><span class="v">4F2A 8C11</span></li>
+            <li><span class="k">Located</span><span class="v">UTC+05:30</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ==================== FOOTER ==================== -->
+<div class="wrap">
+  <section class="subjects">
+    <p>Compilers. Robotics. Machine Learning. Embedded. Optics. Control. Remote Sensing. Build Systems.</p>
+  </section>
+</div>
+
+<section class="endblock">
+  <div class="wrap">
+    <p class="statement">Everything here is documented. Each project carries its own headline number in its own
+    units, and links to the writing that shows how it was arrived at.</p>
+
+    <p class="sub-head">Subscribe for new entries. Roughly monthly, never otherwise.</p>
+    <form class="subscribe" id="subForm">
+      <input id="subEmail" type="email" placeholder="Type your email…" aria-label="Email address">
+      <button type="submit" aria-label="Subscribe">→</button>
+    </form>
+    <p class="sub-note" id="subNote">Mockup — this form is not connected to anything</p>
+
+    <div class="end-social" id="endSocial"></div>
+
+    <ul class="end-links">
+      <li><a href="#/about" data-nav>About</a></li>
+      <li><a href="#/contact" data-nav>Contact</a></li>
+      <li><a href="#/projects" data-nav>Projects</a></li>
+      <li><a href="#/blogs" data-nav>Blogs</a></li>
+    </ul>
+  </div>
+</section>
+
+<p class="colophon-line">Bench · Mockup · Sample content · Set in Playfair &amp; Iowan Old Style</p>
+
+<script>
+(function () {
+  "use strict";
+
+  var DOMAIN = { sw: "Software", hw: "Hardware", ml: "Machine Learning", wr: "Essay" };
+
+  /* Seed content. Used verbatim when no backend answers — which is the case
+     for the standalone published mockup, whose CSP blocks all network calls.
+     When the Node/Mongo service is serving this file, /api/site wins. */
+  var SEED_PROJECTS = [
+    { slug: "kettle", domain: "sw", year: 2026, state: "Active", title: "Kettle", plate: "kettle",
+      headline: "The build cache that had to learn what a step actually touches",
+      dek: "An incremental build cache for monorepos that reasons about effects, not just file hashes.",
+      metric: "4.2×", metricKey: "Cold-build speedup",
+      spec: [["Language","Rust"],["Tests","1,204"],["Stars","2.1k"]] },
+    { slug: "sidereal", domain: "hw", year: 2025, state: "Active", title: "Sidereal", plate: "sidereal",
+      headline: "Closing the loop on a mount that would not stop flexing",
+      dek: "A closed-loop equatorial mount for astrophotography, corrected against a live plate-solve.",
+      metric: "0.8″", metricKey: "Tracking RMS",
+      spec: [["Process","CNC 6061"],["Mass","3.4 kg"],["Revision","C"]] },
+    { slug: "cardinal", domain: "ml", year: 2025, state: "Shipped", title: "Cardinal", plate: "cardinal",
+      headline: "Eighty-seven species, four hundred milliwatts, one microcontroller",
+      dek: "On-device bird-call classification running inside a 400 mW power budget in the field.",
+      metric: "0.91", metricKey: "F1 across 87 species",
+      spec: [["Parameters","1.2 M"],["Training data","94 h"],["Latency","31 ms"]] },
+    { slug: "tracewright", domain: "sw", year: 2025, state: "Shipped", title: "Tracewright", plate: "tracewright",
+      headline: "Telling two CI runs apart when both of them passed",
+      dek: "A differ for distributed traces: point it at two CI runs and it tells you what actually changed.",
+      metric: "1.1 M/s", metricKey: "Spans ingested",
+      spec: [["Language","Go"],["Tests","663"],["Stars","840"]] },
+    { slug: "loam", domain: "hw", year: 2024, state: "Fielded", title: "Loam", plate: "loam",
+      headline: "Seven months on a hillside without a single visit",
+      dek: "A solar soil-moisture mesh that has been reporting from a hillside for seven months unattended.",
+      metric: "214 d", metricKey: "Unattended uptime",
+      spec: [["Process","PCB rev D"],["Mass","96 g"],["Radio","LoRa 868"]] },
+    { slug: "understory", domain: "ml", year: 2024, state: "Paper", title: "Understory", plate: "understory",
+      headline: "Measuring canopy height from orbit, then checking it with a plane",
+      dek: "Canopy-height regression from Sentinel-2, validated against airborne LiDAR across three biomes.",
+      metric: "2.4 m", metricKey: "RMSE against LiDAR",
+      spec: [["Parameters","18 M"],["Dataset","41 GB"],["R²","0.87"]] },
+    { slug: "hookshot", domain: "hw", year: 2023, state: "Archived", title: "Hookshot", plate: "hookshot",
+      headline: "Every motor in the base and nothing heavy past the shoulder",
+      dek: "A cable-driven four-DOF arm with all its motors in the base and nothing heavy past the shoulder.",
+      metric: "1.4 kg", metricKey: "Payload at full reach",
+      spec: [["Process","3D print"],["Mass","1.1 kg"],["Revision","B"]] },
+    { slug: "marginalia", domain: "sw", year: 2023, state: "Shipped", title: "Marginalia", plate: "marginalia",
+      headline: "Annotating PDFs without shipping a PDF engine",
+      dek: "An annotation layer for PDFs that renders in the browser without shipping a PDF engine.",
+      metric: "38 kB", metricKey: "Gzipped bundle",
+      spec: [["Language","TypeScript"],["Tests","417"],["Stars","1.3k"]] }
+  ];
+
+  var SEED_POSTS = [
+    { slug: "build-cache-knows", date: "June 2026", title: "What a build cache can and cannot know",
+      dek: "Content hashing is a claim about determinism, and most build steps quietly aren’t.",
+      read: 12, projectSlug: "kettle" },
+    { slug: "closing-the-loop", date: "November 2025", title: "Closing the loop on a star tracker",
+      dek: "Open-loop tracking is a bet that nothing flexes. Something always flexes.",
+      read: 18, projectSlug: "sidereal" },
+    { slug: "ten-milliwatts", date: "April 2025", title: "Ten milliwatts is a design constraint, not a number",
+      dek: "What changes when the power budget stops being something you measure at the end.",
+      read: 9, projectSlug: "loam" },
+    { slug: "against-confusion", date: "February 2025", title: "Against the confusion matrix",
+      dek: "Aggregate metrics hide exactly the failures that matter in a deployed classifier.",
+      read: 14, projectSlug: "cardinal" },
+    { slug: "svg-by-hand", date: "September 2024", title: "Writing SVG by hand, on purpose",
+      dek: "A short argument for drawing your own diagrams, with the path syntax you actually need.",
+      read: 7, projectSlug: "marginalia" },
+    { slug: "a-drawing-is-a-claim", date: "March 2024", title: "A drawing is a claim",
+      dek: "Engineering drawings are not illustrations. They are assertions with tolerances.",
+      read: 11, projectSlug: "understory" }
+  ];
+
+  /* Live state. Replaced wholesale by loadData() when a backend responds. */
+  var PROJECTS = SEED_PROJECTS.slice();
+  var POSTS = SEED_POSTS.slice();
+
+  function fmtDate(iso) {
+    var d = new Date(iso);
+    if (isNaN(d)) return "";
+    return d.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+  }
+
+  /**
+   * Try the API; fall back to seed content on any failure. A missing backend
+   * is an expected state here (the standalone mockup has none), so this must
+   * never surface an error to the reader.
+   */
+  async function loadData() {
+    try {
+      // Bounded so a hung or absent backend can't leave the page blank.
+      var ctl = new AbortController();
+      var timer = setTimeout(function () { ctl.abort(); }, 2500);
+      var res = await fetch("/api/site", {
+        headers: { Accept: "application/json" },
+        signal: ctl.signal
+      });
+      clearTimeout(timer);
+      if (!res.ok) throw new Error("bad status " + res.status);
+      var data = await res.json();
+      if (!data || !Array.isArray(data.projects) || !Array.isArray(data.posts)) throw new Error("bad shape");
+      if (!data.projects.length && !data.posts.length) throw new Error("empty");
+
+      PROJECTS = data.projects.map(function (p) {
+        return {
+          slug: p.slug, title: p.title, headline: p.headline || p.title, dek: p.dek,
+          domain: p.domain, year: p.year, state: p.state, metric: p.metric,
+          metricKey: p.metricKey, spec: p.spec || [], plate: p.plate || p.slug,
+          cover: p.cover || null, bodyHtml: p.bodyHtml || ""
+        };
+      });
+      POSTS = data.posts.map(function (a) {
+        return {
+          slug: a.slug, title: a.title, dek: a.dek, category: a.category || "Essay",
+          date: fmtDate(a.publishedAt), read: a.readMinutes, projectSlug: a.projectSlug,
+          cover: a.cover || null, bodyHtml: a.bodyHtml || ""
+        };
+      });
+      return true;
+    } catch (err) {
+      return false;
+    }
+  }
+
+  /* ---------------- plates: one stroke, no fill ---------------- */
+
+  var P = '<svg viewBox="0 0 320 200" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" preserveAspectRatio="xMidYMid meet">';
+  var T = 'font-family="Georgia, serif" font-style="italic" font-size="8" fill="currentColor" stroke="none"';
+
+  var PLATES = {
+    kettle: P +
+      '<rect x="18" y="22" width="72" height="30"/><text x="26" y="41" ' + T + '>source</text>' +
+      '<rect x="18" y="88" width="72" height="30"/><text x="26" y="107" ' + T + '>effect log</text>' +
+      '<rect x="126" y="54" width="74" height="34"/><text x="134" y="75" ' + T + '>planner</text>' +
+      '<rect x="126" y="122" width="74" height="30"/><text x="134" y="141" ' + T + '>cache</text>' +
+      '<rect x="236" y="54" width="66" height="34"/><text x="244" y="75" ' + T + '>artefact</text>' +
+      '<path d="M90 37 H110 V66 H126"/><path d="M90 103 H110 V78 H126"/>' +
+      '<path d="M200 71 H236"/><path d="M163 88 V122"/><path d="M200 137 H222 V82 H236"/>' +
+      '<path d="M230 67 l6 4 -6 4"/><path d="M120 62 l6 4 -6 4"/>' +
+      '<line x1="18" y1="172" x2="302" y2="172" stroke-dasharray="3 3"/>' +
+      '<text x="18" y="188" ' + T + '>fig. 1 — effect-aware cache path</text></svg>',
+
+    tracewright: P +
+      '<line x1="20" y1="30" x2="20" y2="160"/><line x1="20" y1="160" x2="300" y2="160"/>' +
+      '<rect x="24" y="36" width="180" height="8"/><rect x="24" y="51" width="96" height="8"/>' +
+      '<rect x="40" y="66" width="132" height="8"/><rect x="56" y="81" width="60" height="8"/>' +
+      '<rect x="56" y="96" width="164" height="8" stroke-dasharray="2 2"/>' +
+      '<rect x="120" y="111" width="112" height="8"/><rect x="150" y="126" width="140" height="8"/>' +
+      '<line x1="204" y1="30" x2="204" y2="160" stroke-dasharray="3 3"/>' +
+      '<text x="208" y="27" ' + T + '>baseline</text>' +
+      '<text x="20" y="182" ' + T + '>fig. 1 — span waterfall, run A against run B</text></svg>',
+
+    marginalia: P +
+      '<rect x="46" y="18" width="148" height="150"/>' +
+      '<line x1="156" y1="18" x2="156" y2="168" stroke-dasharray="2 2"/>' +
+      '<line x1="58" y1="40" x2="144" y2="40"/><line x1="58" y1="52" x2="144" y2="52"/>' +
+      '<line x1="58" y1="64" x2="120" y2="64"/><line x1="58" y1="86" x2="144" y2="86"/>' +
+      '<line x1="58" y1="98" x2="144" y2="98"/><line x1="58" y1="110" x2="100" y2="110"/>' +
+      '<line x1="58" y1="132" x2="144" y2="132"/><line x1="58" y1="144" x2="130" y2="144"/>' +
+      '<path d="M204 40 h-6 v56 h6"/><text x="210" y="72" ' + T + '>note 1</text>' +
+      '<path d="M204 124 h-6 v26 h6"/><text x="210" y="141" ' + T + '>note 2</text>' +
+      '<rect x="58" y="82" width="86" height="10" stroke-dasharray="2 2"/>' +
+      '<text x="46" y="186" ' + T + '>fig. 1 — margin anchoring, text layer</text></svg>',
+
+    sidereal: P +
+      '<circle cx="112" cy="90" r="52"/><circle cx="112" cy="90" r="40" stroke-dasharray="3 3"/>' +
+      '<circle cx="112" cy="90" r="9"/><line x1="60" y1="90" x2="164" y2="90"/><line x1="112" y1="38" x2="112" y2="142"/>' +
+      '<path d="M112 38 A52 52 0 0 1 156 64"/>' +
+      '<rect x="196" y="60" width="34" height="60"/><circle cx="213" cy="90" r="10"/><line x1="213" y1="80" x2="213" y2="100"/>' +
+      '<path d="M164 90 H196"/><rect x="242" y="74" width="50" height="32"/><text x="248" y="94" ' + T + '>encoder</text>' +
+      '<line x1="60" y1="158" x2="164" y2="158"/><path d="M64 154 l-4 4 4 4"/><path d="M160 154 l4 4 -4 4"/>' +
+      '<text x="98" y="152" ' + T + '>Ø104</text>' +
+      '<line x1="196" y1="50" x2="230" y2="50"/><path d="M200 46 l-4 4 4 4"/><path d="M226 46 l4 4 -4 4"/>' +
+      '<text x="203" y="44" ' + T + '>34.0</text>' +
+      '<line x1="18" y1="174" x2="302" y2="174"/><text x="18" y="190" ' + T + '>pl. 02 — right-ascension axis, scale 1:2</text></svg>',
+
+    loam: P +
+      '<rect x="34" y="30" width="58" height="40"/><text x="42" y="55" ' + T + '>node</text>' +
+      '<line x1="63" y1="30" x2="63" y2="12"/><path d="M55 16 l8 -6 8 6"/>' +
+      '<rect x="34" y="86" width="58" height="16"/><text x="40" y="99" ' + T + '>pv 1w</text>' +
+      '<line x1="63" y1="70" x2="63" y2="86"/>' +
+      '<line x1="18" y1="120" x2="302" y2="120"/>' +
+      '<path d="M18 128 h284" stroke-dasharray="1 5"/><path d="M18 138 h284" stroke-dasharray="1 7"/>' +
+      '<path d="M18 150 h284" stroke-dasharray="1 9"/>' +
+      '<line x1="63" y1="102" x2="63" y2="120"/>' +
+      '<path d="M63 120 V156"/><path d="M58 156 h10"/><text x="74" y="150" ' + T + '>probe −30 cm</text>' +
+      '<path d="M96 44 q30 -14 60 0" stroke-dasharray="2 3"/><path d="M96 34 q44 -20 88 0" stroke-dasharray="2 3"/>' +
+      '<rect x="200" y="30" width="88" height="40"/><text x="208" y="48" ' + T + '>gateway</text>' +
+      '<text x="208" y="62" ' + T + '>868 MHz</text>' +
+      '<text x="18" y="186" ' + T + '>pl. 05 — section, mesh node in situ</text></svg>',
+
+    hookshot: P +
+      '<rect x="24" y="126" width="70" height="34"/><text x="34" y="148" ' + T + '>base</text>' +
+      '<circle cx="59" cy="126" r="7"/><circle cx="59" cy="126" r="2.5"/>' +
+      '<line x1="59" y1="126" x2="130" y2="64"/><circle cx="130" cy="64" r="6"/><circle cx="130" cy="64" r="2"/>' +
+      '<line x1="130" y1="64" x2="212" y2="50"/><circle cx="212" cy="50" r="5"/>' +
+      '<line x1="212" y1="50" x2="266" y2="84"/><path d="M262 80 l10 2 -2 10"/>' +
+      '<path d="M59 126 q40 -46 71 -62" stroke-dasharray="2 3"/>' +
+      '<path d="M130 64 q44 -20 82 -14" stroke-dasharray="2 3"/>' +
+      '<circle cx="42" cy="143" r="8"/><circle cx="76" cy="143" r="8"/>' +
+      '<path d="M42 135 L128 58" stroke-dasharray="1 3"/><path d="M76 135 L210 45" stroke-dasharray="1 3"/>' +
+      '<text x="140" y="98" ' + T + '>θ2</text><text x="72" y="102" ' + T + '>θ1</text>' +
+      '<line x1="24" y1="174" x2="302" y2="174"/><text x="24" y="190" ' + T + '>pl. 07 — linkage, cable routing shown</text></svg>',
+
+    cardinal: P +
+      '<line x1="34" y1="24" x2="34" y2="150"/><line x1="34" y1="150" x2="298" y2="150"/>' +
+      '<line x1="34" y1="118" x2="298" y2="118" stroke-dasharray="2 4"/>' +
+      '<line x1="34" y1="86" x2="298" y2="86" stroke-dasharray="2 4"/>' +
+      '<line x1="34" y1="54" x2="298" y2="54" stroke-dasharray="2 4"/>' +
+      '<rect x="44" y="46" width="14" height="104"/><rect x="66" y="52" width="14" height="98"/>' +
+      '<rect x="88" y="60" width="14" height="90"/><rect x="110" y="58" width="14" height="92"/>' +
+      '<rect x="132" y="70" width="14" height="80"/><rect x="154" y="76" width="14" height="74"/>' +
+      '<rect x="176" y="84" width="14" height="66"/><rect x="198" y="96" width="14" height="54"/>' +
+      '<rect x="220" y="104" width="14" height="46"/><rect x="242" y="118" width="14" height="32"/>' +
+      '<rect x="264" y="130" width="14" height="20"/>' +
+      '<path d="M34 62 H298" stroke-dasharray="4 2"/><text x="252" y="58" ' + T + '>F1 0.91</text>' +
+      '<text x="34" y="170" ' + T + '>per-species F1, ranked (87)</text>' +
+      '<text x="34" y="188" ' + T + '>pl. 03 — held-out set, 400 mW budget</text></svg>',
+
+    understory: P +
+      '<line x1="38" y1="20" x2="38" y2="148"/><line x1="38" y1="148" x2="296" y2="148"/>' +
+      '<circle cx="70" cy="134" r="2.4"/><circle cx="88" cy="126" r="2.4"/><circle cx="96" cy="130" r="2.4"/>' +
+      '<circle cx="112" cy="116" r="2.4"/><circle cx="124" cy="110" r="2.4"/><circle cx="130" cy="118" r="2.4"/>' +
+      '<circle cx="146" cy="102" r="2.4"/><circle cx="158" cy="94" r="2.4"/><circle cx="164" cy="102" r="2.4"/>' +
+      '<circle cx="178" cy="86" r="2.4"/><circle cx="190" cy="78" r="2.4"/><circle cx="196" cy="88" r="2.4"/>' +
+      '<circle cx="210" cy="70" r="2.4"/><circle cx="222" cy="62" r="2.4"/><circle cx="230" cy="72" r="2.4"/>' +
+      '<circle cx="244" cy="54" r="2.4"/><circle cx="256" cy="46" r="2.4"/><circle cx="264" cy="56" r="2.4"/>' +
+      '<path d="M38 146 L296 32"/>' +
+      '<path d="M38 154 L296 40" stroke-dasharray="2 3"/><path d="M38 138 L296 24" stroke-dasharray="2 3"/>' +
+      '<text x="196" y="120" ' + T + '>R² 0.87</text><text x="196" y="132" ' + T + '>RMSE 2.4 m</text>' +
+      '<text x="38" y="168" ' + T + '>LiDAR canopy height (m) →</text>' +
+      '<text x="38" y="188" ' + T + '>pl. 06 — predicted against measured, three biomes</text></svg>'
+  };
+
+  function fallbackPlate(slug) {
+    var h = 0, i;
+    for (i = 0; i < slug.length; i++) { h = (h * 31 + slug.charCodeAt(i)) >>> 0; }
+    var s = P + '<rect x="18" y="18" width="284" height="146" stroke-dasharray="3 3"/>';
+    for (i = 0; i < 9; i++) {
+      h = (h * 1103515245 + 12345) >>> 0;
+      var x = 34 + (h % 246), y = 32 + ((h >>> 8) % 116);
+      h = (h * 1103515245 + 12345) >>> 0;
+      var w = 14 + (h % 44);
+      s += '<line x1="' + x + '" y1="' + y + '" x2="' + Math.min(x + w, 298) + '" y2="' + y + '"/>' +
+           '<circle cx="' + x + '" cy="' + y + '" r="2"/>';
+    }
+    return s + '<text x="18" y="184" ' + T + '>plate pending</text></svg>';
+  }
+
+  function plateFor(slug) { return PLATES[slug] || fallbackPlate(slug); }
+
+  /* ---------------- icons ---------------- */
+
+  /* Solid marks, not hairline outlines — the reference row is filled brand
+     glyphs, and thin strokes at 16px read as grey smudges beside them. */
+  var ICONS = {
+    github: { label: "GitHub", d:
+      '<path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>' },
+    x: { label: "X", d:
+      '<path d="M12.6 0h2.454l-5.36 6.126L16 16h-4.937l-3.867-5.07L2.774 16H.318l5.733-6.554L0 0h5.063l3.495 4.633L12.6 0zm-.86 14.542h1.36L4.323 1.38H2.865l8.875 13.162z"/>' },
+    rss: { label: "RSS feed", d:
+      '<path d="M2 1.5a12.5 12.5 0 0 1 12.5 12.5h-2.6A9.9 9.9 0 0 0 2 4.1V1.5z"/>' +
+      '<path d="M2 6.3a7.7 7.7 0 0 1 7.7 7.7H7.1A5.1 5.1 0 0 0 2 8.9V6.3z"/>' +
+      '<circle cx="3.5" cy="12.5" r="1.8"/>' },
+    mail: { label: "Email", d:
+      '<path d="M.6 3h14.8a.6.6 0 0 1 .6.6v8.8a.6.6 0 0 1-.6.6H.6a.6.6 0 0 1-.6-.6V3.6A.6.6 0 0 1 .6 3z"/>' +
+      '<path d="M1.3 4.2 8 9.3l6.7-5.1" fill="none" stroke="var(--block-bg)" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>' }
+  };
+
+  function iconRow(size) {
+    return ["github", "x", "rss", "mail"].map(function (n) {
+      var ic = ICONS[n];
+      return '<a href="#/contact" data-nav aria-label="' + ic.label + '" title="' + ic.label + '">' +
+        '<svg width="' + size + '" height="' + size + '" viewBox="0 0 16 16" fill="currentColor">' +
+        ic.d + '</svg></a>';
+    }).join("");
+  }
+
+  /* ---------------- lookups ---------------- */
+
+  function projectBySlug(s) { return PROJECTS.filter(function (p) { return p.slug === s; })[0] || null; }
+  function postBySlug(s) { return POSTS.filter(function (a) { return a.slug === s; })[0] || null; }
+  /* The link is one-directional in storage (a post names its project), so the
+     reverse lookup is derived rather than stored — nothing can fall out of sync. */
+  function postForProject(slug) { return POSTS.filter(function (a) { return a.projectSlug === slug; })[0] || null; }
+
+  function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+
+  /* ---------------- cards ---------------- */
+
+  /* An uploaded cover wins; otherwise the project's line plate fills the image
+     slot. A magazine grid cannot have an empty image well. */
+  function imageFor(cover, plateSlug) {
+    return cover
+      ? '<img src="' + esc(cover) + '" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover">'
+      : plateFor(plateSlug);
+  }
+
+  function projectCard(p, opts) {
+    opts = opts || {};
+    return '<a class="card' + (opts.lead ? " lead-card" : "") + '" href="#/project/' + p.slug + '" data-nav>' +
+      '<div class="card-img">' + imageFor(p.cover, p.plate || p.slug) + '</div>' +
+      '<p class="eyebrow">' + (DOMAIN[p.domain] || "Project") + '</p>' +
+      '<h3>' + esc(p.headline || p.title) + '</h3>' +
+      (opts.lead ? '<p class="dek">' + esc(p.dek) + '</p>' : '') +
+      '<p class="byline">' + esc(p.title) +
+        (p.metric ? ' · ' + esc(p.metric) + " " + esc(String(p.metricKey).toLowerCase()) : '') + '</p>' +
+      '</a>';
+  }
+
+  function articleCard(a) {
+    var p = a.projectSlug ? projectBySlug(a.projectSlug) : null;
+    return '<a class="card" href="#/article/' + a.slug + '" data-nav>' +
+      '<div class="card-img">' + imageFor(a.cover, p ? (p.plate || p.slug) : a.slug) + '</div>' +
+      '<p class="eyebrow">' + esc(a.category || "Essay") + '</p>' +
+      '<h3>' + esc(a.title) + '</h3>' +
+      '<p class="byline">' + esc(a.date || "") + ' · ' + a.read + ' min read</p>' +
+      '</a>';
+  }
+
+  /* ---------------- home ---------------- */
+
+  function renderHome() {
+    var byYear = PROJECTS.slice().sort(function (x, y) { return y.year - x.year; });
+
+    document.getElementById("latestGrid").innerHTML = byYear.length
+      ? projectCard(byYear[0], { lead: true }) +
+        byYear.slice(1, 5).map(function (p) { return projectCard(p); }).join("")
+      : '<p class="empty">Nothing published yet.</p>';
+
+    /* Trending starts from the tail so the home page surfaces work the Latest
+       block didn't already show, wrapping round only if there isn't enough. */
+    var rest = byYear.slice(5).concat(byYear.slice(1, 5));
+    document.getElementById("trendingGrid").innerHTML =
+      rest.slice(0, 4).map(function (p) { return projectCard(p); }).join("") ||
+      '<p class="empty">More soon.</p>';
+
+    document.getElementById("blogGrid").innerHTML =
+      POSTS.slice(0, 3).map(articleCard).join("") || '<p class="empty">No posts yet.</p>';
+  }
+
+  /* ---------------- projects ---------------- */
+
+  var filter = "all";
+
+  function renderProjects() {
+    var list = PROJECTS.filter(function (p) { return filter === "all" || p.domain === filter; })
+      .sort(function (x, y) { return y.year - x.year || y.id - x.id; });
+    document.getElementById("projectGrid").innerHTML =
+      list.length ? list.map(function (p) { return projectCard(p); }).join("")
+                  : '<p class="empty">Nothing in this set yet.</p>';
+    document.getElementById("projTally").textContent =
+      list.length + (list.length === 1 ? " entry" : " entries");
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll("[data-filter]"), function (btn) {
+    btn.addEventListener("click", function () {
+      filter = btn.getAttribute("data-filter");
+      Array.prototype.forEach.call(document.querySelectorAll("[data-filter]"), function (b) {
+        b.setAttribute("aria-pressed", String(b === btn));
+      });
+      renderProjects();
+    });
+  });
+
+  function renderBlogs() {
+    document.getElementById("allBlogGrid").innerHTML =
+      POSTS.map(articleCard).join("") || '<p class="empty">No posts yet.</p>';
+    document.getElementById("blogTally").textContent =
+      POSTS.length + (POSTS.length === 1 ? " post" : " posts");
+  }
+
+  /* ---------------- search ---------------- */
+
+  function renderSearch(q) {
+    var needle = q.toLowerCase();
+    var hits = [];
+    PROJECTS.forEach(function (p) {
+      var hay = [p.title, p.headline, p.dek, DOMAIN[p.domain], p.metricKey].join(" ").toLowerCase();
+      if (hay.indexOf(needle) > -1) { hits.push(projectCard(p)); }
+    });
+    POSTS.forEach(function (a) {
+      var hay = [a.title, a.dek, a.category].join(" ").toLowerCase();
+      if (hay.indexOf(needle) > -1) { hits.push(articleCard(a)); }
+    });
+    document.getElementById("searchHead").textContent = "Search — " + q;
+    document.getElementById("searchTally").textContent =
+      hits.length + (hits.length === 1 ? " result" : " results");
+    document.getElementById("searchGrid").innerHTML =
+      hits.length ? hits.join("") : '<p class="empty">Nothing matched that.</p>';
+  }
+
+  document.getElementById("searchForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var q = document.getElementById("searchInput").value.trim();
+    if (q) { window.location.hash = "#/search/" + encodeURIComponent(q); }
+  });
+
+  /* ---------------- detail ---------------- */
+
+  var NOTES = {
+    sw: ["The first version was a content-addressed cache and it was wrong about a third of the time. Not wrong in a way that failed loudly — wrong in the way that produces a binary that works on the machine that built it and nowhere else.",
+         "Hashing inputs is a claim about determinism. A build step that reads the clock, or the environment, or a file it never declared, is not a function of its declared inputs, and no amount of hashing those inputs will tell you so.",
+         "So it was rebuilt around an effect log. Every step runs under a syscall filter that records what it actually touched; the recorded set is compared against the declared set; a mismatch invalidates the entry and reports the undeclared read by path."],
+    hw: ["Open-loop tracking is a bet that nothing in the mechanism flexes. On a bench, at room temperature, with no wind, that bet mostly pays. Pointed at the sky for four hours in November it does not.",
+         "The correction path is a plate-solve every ninety seconds: capture, solve against the astrometric index, compute the true pointing error, and fold it into the rate rather than jumping the axis. Jumping shows up in the exposure; a rate correction does not.",
+         "Getting from six arcseconds to sub-arcsecond was mostly mechanical, not algorithmic. Backlash in the worm was the dominant term, and no control loop fixes backlash — it only hides it until the direction reverses."],
+    ml: ["The model is small because the power budget is 400 mW and the device sits on a hillside with a one-watt panel and no one to visit it. Everything downstream of that constraint is a consequence of it.",
+         "Aggregate F1 was the wrong thing to optimise for a long time. The held-out set was dominated by common species, so the metric was largely reporting how well the model did on birds anyone can identify by ear.",
+         "Reweighting the evaluation by how much a mistake would actually cost an ecologist changed which checkpoint we shipped. The one we chose scores lower overall and is materially better at the twelve species the survey exists to count."]
+  };
+
+  function renderProject(slug) {
+    var p = projectBySlug(slug);
+    var host = document.getElementById("entryBody");
+    if (!p) { host.innerHTML = '<div class="prose"><p class="empty">No such entry.</p></div>'; return; }
+    var a = postForProject(p.slug);
+
+    host.innerHTML =
+      '<div class="article-head">' +
+        '<p class="eyebrow">' + (DOMAIN[p.domain] || "Project") + '</p>' +
+        '<h1>' + esc(p.title) + '</h1>' +
+        '<p class="byline">' + p.year + ' · ' + esc(p.state || "") +
+          (p.metric ? ' · ' + esc(p.metric) + " " + esc(String(p.metricKey).toLowerCase()) : '') + '</p>' +
+      '</div>' +
+      '<figure class="hero-figure"><div class="card-img">' + imageFor(p.cover, p.plate || p.slug) + '</div>' +
+        '<figcaption>' + esc(p.dek) + '</figcaption></figure>' +
+      '<div class="prose">' +
+        /* Authored body when the backend supplied one; otherwise the canned
+           domain notes keep the standalone mockup readable. */
+        (p.bodyHtml || (NOTES[p.domain] || []).map(function (t) { return '<p>' + t + '</p>'; }).join("")) +
+        '<ul class="spec">' +
+          (p.spec || []).map(function (kv) {
+            return '<li><span class="k">' + esc(kv[0]) + '</span><span class="v">' + esc(kv[1]) + '</span></li>';
+          }).join("") +
+          (p.metric ? '<li><span class="k">' + esc(p.metricKey) + '</span><span class="v">' + esc(p.metric) + '</span></li>' : '') +
+        '</ul>' +
+        (a ? '<h2>Written up in</h2><p><a href="#/article/' + a.slug + '" data-nav>' + esc(a.title) + '</a> — ' +
+             esc(a.date || "") + ', ' + a.read + ' min read.</p>' : '') +
+      '</div>' +
+      '<div class="backline"><a href="#/projects" data-nav>← All projects</a></div>';
+  }
+
+  function renderArticle(slug) {
+    var a = postBySlug(slug);
+    var host = document.getElementById("entryBody");
+    if (!a) { host.innerHTML = '<div class="prose"><p class="empty">No such post.</p></div>'; return; }
+    var p = a.projectSlug ? projectBySlug(a.projectSlug) : null;
+
+    host.innerHTML =
+      '<div class="article-head">' +
+        '<p class="eyebrow">' + esc(a.category || "Essay") + '</p>' +
+        '<h1>' + esc(a.title) + '</h1>' +
+        '<p class="byline">' + esc(a.date || "") + ' · ' + a.read + ' min read</p>' +
+      '</div>' +
+      ((a.cover || p) ? '<figure class="hero-figure"><div class="card-img">' +
+           imageFor(a.cover, p ? (p.plate || p.slug) : a.slug) + '</div>' +
+           (p ? '<figcaption>From ' + esc(p.title) + ' — ' + esc(p.dek) + '</figcaption>' : '') +
+           '</figure>' : '') +
+      '<div class="prose">' +
+        (a.bodyHtml ||
+        ('<p>' + esc(a.dek) + ' There is a particular kind of bug that only appears once the thing leaves the bench. ' +
+        'It is not a logic error and it does not reproduce in a test, because the condition it depends on is a ' +
+        'property of the world rather than of the program.</p>' +
+        '<p>What follows is an account of one of those, and of the measurement that eventually made it visible. ' +
+        'The short version is that the assumption was never written down anywhere, which is exactly why it ' +
+        'survived three rewrites.</p>' +
+        '<h2>The assumption</h2>' +
+        '<p>Every system has a boundary it treats as trustworthy. Inside that boundary things are assumed stable: ' +
+        'the clock is monotonic, the mechanism is rigid, the labels are correct. The boundary is rarely stated, ' +
+        'which means it is rarely checked.</p>' +
+        '<blockquote>A specification that does not say what it assumes is not a specification. It is a description of one run.</blockquote>' +
+        '<p>The fix in each case has the same shape — make the assumption an observable, then let it fail loudly. ' +
+        'That is more work than it sounds, because most assumptions are not directly measurable and have to be ' +
+        'inferred from something adjacent.</p>' +
+        '<h2>What I would do differently</h2>' +
+        '<p>Write the assumption down first, in the same file as the code that depends on it, in a form a test can ' +
+        'read. Everything else here is a consequence of not having done that.</p>')) +
+        (p ? '<h2>Documents</h2><p><a href="#/project/' + p.slug + '" data-nav>' + esc(p.title) + '</a>' +
+             (p.metric ? ' — ' + esc(p.metric) + " " + esc(String(p.metricKey).toLowerCase()) : '') + '.</p>' : '') +
+      '</div>' +
+      '<div class="backline"><a href="#/blogs" data-nav>← All posts</a></div>';
+  }
+
+  /* ---------------- forms ---------------- */
+
+  var corrForm = document.getElementById("corrForm");
+  corrForm.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var note = document.getElementById("corrNote");
+    var name = document.getElementById("c-name").value.trim();
+    var email = document.getElementById("c-email").value.trim();
+    var body = document.getElementById("c-body").value.trim();
+    if (!name || !email || !body) {
+      note.textContent = "Name, reply address and message are all needed";
+      return;
+    }
+    /* No backend. Say so rather than showing a "Sent" confirmation that would be a lie. */
+    corrForm.querySelector(".send").disabled = true;
+    note.textContent = "Mockup — nothing was actually sent";
+  });
+
+  document.getElementById("subForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    document.getElementById("subNote").textContent = "Mockup — no list is connected to this form";
+  });
+
+  /* ---------------- routing ---------------- */
+
+  var VIEWS = ["home", "projects", "blogs", "search", "entry", "about", "contact"];
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function show(view) {
+    VIEWS.forEach(function (v) {
+      var el = document.getElementById("view-" + v);
+      if (el) { el.classList.toggle("is-on", v === view); }
+    });
+    Array.prototype.forEach.call(document.querySelectorAll(".mast-nav a[data-view]"), function (a) {
+      var v = a.getAttribute("data-view");
+      if (v === view) { a.setAttribute("aria-current", "page"); } else { a.removeAttribute("aria-current"); }
+    });
+  }
+
+  function route() {
+    var parts = window.location.hash.replace(/^#\/?/, "").split("/");
+    if (parts[0] === "projects") { renderProjects(); show("projects"); }
+    else if (parts[0] === "blogs") { renderBlogs(); show("blogs"); }
+    else if (parts[0] === "project" && parts[1]) { renderProject(parts[1]); show("entry"); }
+    else if (parts[0] === "article" && parts[1]) { renderArticle(parts[1]); show("entry"); }
+    else if (parts[0] === "search" && parts[1]) { renderSearch(decodeURIComponent(parts[1])); show("search"); }
+    else if (parts[0] === "about") { show("about"); }
+    else if (parts[0] === "contact") { show("contact"); }
+    else { show("home"); }
+    window.scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" });
+  }
+
+  window.addEventListener("hashchange", route);
+
+  document.getElementById("themeToggle").addEventListener("click", function () {
+    var root = document.documentElement;
+    var cur = root.getAttribute("data-theme");
+    if (!cur) { cur = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"; }
+    root.setAttribute("data-theme", cur === "dark" ? "light" : "dark");
+  });
+
+  /* ---------------- boot ---------------- */
+
+  document.getElementById("mastSocial").innerHTML = iconRow(17);
+  document.getElementById("endSocial").innerHTML = iconRow(18);
+
+  function paint() {
+    renderHome();
+    renderProjects();
+    renderBlogs();
+    route();
+  }
+
+  loadData().then(paint, paint);
+})();
+</script>

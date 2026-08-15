@@ -1,0 +1,65 @@
+# Pinned explicitly. Without this, Compose derives the project name from the
+# directory, so renaming or cloning the folder silently orphans the volumes and
+# the stack comes back up empty. Container and volume names now stay `bench-*`
+# and `bench_*` wherever the repo lives.
+name: bench
+
+services:
+  mongo:
+    # Overridable because MongoDB 5.0+ requires AVX, which an LXC inherits from
+    # the Proxmox host CPU. The LXC installer sets mongo:4.4 automatically when
+    # the host lacks AVX. See README "MongoDB and AVX".
+    image: ${MONGO_IMAGE:-mongo:7}
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:?set MONGO_USER in .env}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:?set MONGO_PASSWORD in .env}
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    # Deliberately no `ports:` — Mongo is reachable only on the compose
+    # network. Nothing outside needs it, so nothing outside gets it.
+
+  bench:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+    environment:
+      PORT: 4000
+      DATA_DIR: /data
+      MONGO_URL: mongodb://${MONGO_USER}:${MONGO_PASSWORD}@mongo:27017/?authSource=admin
+      MONGO_DB: ${MONGO_DB:-bench}
+      SESSION_SECRET: ${SESSION_SECRET:?generate with openssl rand -hex 32}
+      ADMIN_USER: ${ADMIN_USER:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?set a password of 12+ characters}
+      # Bind 0.0.0.0 INSIDE the container so Docker's port publish can reach it.
+      # Host exposure is restricted by the loopback port mapping below, not here.
+      BIND_HOST: 0.0.0.0
+      # Public URL once a proxy is in front — used to validate admin requests.
+      PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:-http://127.0.0.1:4000}
+      # Ceiling on total uploaded-image bytes (default 512MB).
+      UPLOAD_BUDGET_BYTES: ${UPLOAD_BUDGET_BYTES:-536870912}
+      # Defaults to false because the local setup below is plain HTTP. With
+      # this true over http://, the browser drops the session cookie and login
+      # fails with no visible error. Set true the moment TLS is in front.
+      SECURE_COOKIES: ${SECURE_COOKIES:-false}
+      TRUST_PROXY: ${TRUST_PROXY:-0}
+    volumes:
+      - bench-uploads:/data
+    ports:
+      # Loopback only. This is NOT exposed to your LAN or the internet — only
+      # this machine can reach it. The mapping has to exist at all or your own
+      # browser can't connect either.
+      # To publish later: put Caddy in front, don't change this to 0.0.0.0.
+      - "127.0.0.1:4000:4000"
+
+volumes:
+  mongo-data:
+  bench-uploads:

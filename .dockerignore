@@ -1,0 +1,15 @@
+# Secrets and local state must never enter the image layer cache.
+.env
+.env.*
+data/
+node_modules/
+.git/
+.gitignore
+*.log
+.DS_Store
+README.md
+
+# Regenerated inside the image by build.js
+public/index.html
+
+# package-lock.json is needed by `npm ci` — do NOT ignore it.

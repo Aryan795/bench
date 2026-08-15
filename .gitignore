@@ -1,0 +1,11 @@
+node_modules/
+data/
+.env
+*.log
+.DS_Store
+
+# Generated from src/site.html by build.js — never edit directly.
+public/index.html
+
+# Stale artifact export — src/site.html is canonical.
+/index.html
