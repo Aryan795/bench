@@ -210,9 +210,38 @@ a deterministic generated lattice, so an image slot is never empty.
 
 ## Deploy to a Proxmox LXC
 
-`deploy/bench-lxc.sh` creates an unprivileged Debian 12 container, installs Docker inside
-it, and brings the stack up. Run it **on the Proxmox host, as root** — it uses `pct`, so
-it will not work anywhere else.
+There are two installers. Both create an unprivileged Debian 12 container and must run
+**on the Proxmox host, as root** — they use `pct`, so they will not work anywhere else.
+
+| | `bench-lxc.sh` (Docker) | `bench-lxc-native.sh` (no Docker) |
+|---|---|---|
+| Runs as | two containers under a Docker daemon | two systemd services |
+| LXC features required | `nesting=1,keyctl=1` | **none** |
+| Disk | ~3.8 GB | ~2.5 GB |
+| RAM | ~275 MB | ~155 MB |
+| Start / stop | `docker compose up -d` | `systemctl start bench` |
+| Logs | `docker compose logs -f bench` | `journalctl -u bench -f` |
+| Update | `git pull && docker compose up -d --build` | `git pull && npm ci && systemctl restart bench` |
+| App isolation | separate container, UID 1001 | systemd sandboxing |
+| Works without AVX | yes (`mongo:4.4` image) | **no** |
+| Works on arm64 | yes | no (MongoDB ships Debian server packages for amd64 only) |
+
+**Which to pick.** Native is lighter and keeps the container unprivileged with default
+features — not needing `nesting=1` is the strongest argument for it, since that flag
+widens the kernel surface exposed to the container. Docker gives you pinned image
+versions, a one-command update, and a second isolation boundary around the app.
+
+Runtime performance is the same either way — both are namespaces on the same kernel.
+
+Use Docker if your CPU lacks AVX; the native path has no fallback there, because MongoDB
+publishes `mongodb-org-server` 4.4 only for Debian 10 (buster), which is end-of-life. The
+native installer detects this and refuses rather than building a container that
+crash-loops.
+
+### Docker path
+
+`deploy/bench-lxc.sh` creates the container, installs Docker inside it, and brings the
+stack up.
 
 ```bash
 apt-get install -y git
@@ -254,6 +283,50 @@ Manage it afterwards:
 pct exec <CTID> -- bash -lc 'cd /opt/bench && docker compose ps'
 pct exec <CTID> -- bash -lc 'cd /opt/bench && docker compose logs -f bench'
 ```
+
+### Native path
+
+`deploy/bench-lxc-native.sh` installs Node and MongoDB into the container's own OS and
+supervises them with systemd. No Docker anywhere.
+
+```bash
+apt-get install -y git
+git clone https://github.com/YOUR-USERNAME/bench.git /root/bench
+cd /root/bench
+./deploy/bench-lxc-native.sh
+```
+
+Same environment overrides as the Docker script (`CTID`, `STORAGE`, `BRIDGE_IP`, …), with
+`DISK_GB` defaulting to 6 instead of 8.
+
+It creates the container **without** `--features`, installs Node from NodeSource and
+MongoDB 7.0 from MongoDB's own apt repo, creates the database user and *then* enables
+`authorization` (the reverse order locks you out), writes `/etc/bench.env` root-owned at
+mode 600, and installs a sandboxed unit.
+
+The sandboxing is the point — it replaces the boundary Docker was providing:
+
+```ini
+NoNewPrivileges=yes      ProtectSystem=strict     ProtectHome=yes
+PrivateTmp=yes           PrivateDevices=yes       ProtectProc=invisible
+ProtectKernelTunables=yes ProtectKernelModules=yes ProtectControlGroups=yes
+RestrictNamespaces=yes   RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+CapabilityBoundingSet=   SystemCallFilter=@system-service
+```
+
+`/opt/bench` is read-only to the service; `/var/lib/bench` (uploads) is the only writable
+path. `MemoryDenyWriteExecute` is deliberately **not** set — V8 needs W+X to JIT, and
+setting it stops Node starting at all.
+
+Manage it with:
+
+```bash
+pct exec <CTID> -- systemctl status bench
+pct exec <CTID> -- journalctl -u bench -f
+pct exec <CTID> -- systemctl restart bench
+```
+
+Journald is capped at 200 MB, matching the Docker path's log limit.
 
 ### Disk sizing
 
