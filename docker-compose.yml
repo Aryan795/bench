@@ -4,6 +4,15 @@
 # and `bench_*` wherever the repo lives.
 name: bench
 
+# Docker's json-file driver has NO size limit by default, so container logs grow
+# without bound — on a homelab box that runs for months this is the most likely
+# thing to eventually fill the disk. Cap each service at 3 x 10MB.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   mongo:
     # Overridable because MongoDB 5.0+ requires AVX, which an LXC inherits from
@@ -11,6 +20,7 @@ services:
     # the host lacks AVX. See README "MongoDB and AVX".
     image: ${MONGO_IMAGE:-mongo:7}
     restart: unless-stopped
+    logging: *logging
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:?set MONGO_USER in .env}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:?set MONGO_PASSWORD in .env}
@@ -28,6 +38,7 @@ services:
   bench:
     build: .
     restart: unless-stopped
+    logging: *logging
     depends_on:
       mongo:
         condition: service_healthy

@@ -255,6 +255,36 @@ pct exec <CTID> -- bash -lc 'cd /opt/bench && docker compose ps'
 pct exec <CTID> -- bash -lc 'cd /opt/bench && docker compose logs -f bench'
 ```
 
+### Disk sizing
+
+`DISK_GB` defaults to 8, which is right for this stack. Measured steady state:
+
+| Component | Size |
+|---|---|
+| Debian 12 rootfs | ~1.1 GB |
+| docker-ce + containerd | ~500 MB |
+| Images (`mongo:7` 828 MB + app 159 MB) | ~1.0 GB |
+| Build cache after `--build` | 300–550 MB |
+| Mongo data (floor) | ~300 MB |
+| Uploads, capped by `UPLOAD_BUDGET_BYTES` | 0–512 MB |
+| **Total** | **~3.8 GB** |
+
+6 GB is the practical floor; below that a rebuild plus build cache will squeeze you.
+
+Two things that catch people out:
+
+- **MongoDB costs ~300 MB when empty.** That is WiredTiger preallocating journal files,
+  not your content — the figure is the same for 6 posts or 600. Text is negligible
+  beside it.
+- **Container logs are unbounded by default.** Docker's `json-file` driver has no size
+  limit, which on a box that runs for months is the likeliest thing to fill the disk.
+  Both services are capped at 3 × 10 MB here via the `x-logging` anchor in
+  `docker-compose.yml`.
+
+On LVM-thin or ZFS the rootfs is thin-provisioned, so an oversized `DISK_GB` costs little
+real space. Reclaim build cache any time with `docker builder prune` (~480 MB after a
+rebuild). To shrink the worst case further, lower `UPLOAD_BUDGET_BYTES`.
+
 ### Reaching it from a browser
 
 Inside the container Bench binds `127.0.0.1:4000`, so it is **not** on your LAN. Browsing
