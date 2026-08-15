@@ -210,8 +210,38 @@ a deterministic generated lattice, so an image slot is never empty.
 
 ## Deploy to a Proxmox LXC
 
-There are two installers. Both create an unprivileged Debian 12 container and must run
-**on the Proxmox host, as root** — they use `pct`, so they will not work anywhere else.
+### One-line install
+
+On the Proxmox host, as root:
+
+```bash
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/Aryan795/bench/main/deploy/install.sh)"
+```
+
+That asks which install type you want, offers Default or Advanced settings, downloads the
+repo, and runs the matching installer below. It picks the next free CTID, finds your
+storage, and prints the container IP and a generated admin password when it finishes.
+
+Use that exact form rather than `curl ... | bash`. Piping puts the script itself on stdin,
+so the menus have nothing to read your keystrokes from.
+
+Every prompt has an environment variable behind it, and with no TTY the menus are skipped
+entirely — so the same command works unattended from cron or Ansible:
+
+```bash
+INSTALL_TYPE=native CTID=922 DISK_GB=6 RAM_MB=1024 CT_HOSTNAME=bench \
+  bash -c "$(curl -fsSL https://raw.githubusercontent.com/Aryan795/bench/main/deploy/install.sh)"
+```
+
+`install.sh` is only a front end. It does no work of its own beyond asking and fetching —
+the two scripts below do the real installing and are perfectly usable on their own if you
+would rather read exactly what runs before running it, which is the better habit with any
+`curl`-to-root-shell one-liner.
+
+### The two installers
+
+Both create an unprivileged Debian 12 container and must run **on the Proxmox host, as
+root** — they use `pct`, so they will not work anywhere else.
 
 | | `bench-lxc.sh` (Docker) | `bench-lxc-native.sh` (no Docker) |
 |---|---|---|
@@ -263,7 +293,7 @@ pvesm status
 Override any default through the environment:
 
 ```bash
-CTID=921 HOSTNAME=bench STORAGE=local-zfs BRIDGE=vmbr0 \
+CTID=921 CT_HOSTNAME=bench STORAGE=local-zfs BRIDGE=vmbr0 \
 DISK_GB=8 RAM_MB=1024 CORES=2 ./deploy/bench-lxc.sh
 ```
 
@@ -360,9 +390,15 @@ rebuild). To shrink the worst case further, lower `UPLOAD_BUDGET_BYTES`.
 
 ### Reaching it from a browser
 
-Inside the container Bench binds `127.0.0.1:4000`, so it is **not** on your LAN. Browsing
-to the container's IP will fail — that is the intended behaviour, not a bug. Three ways to
-get to it:
+By default, inside the container Bench binds `127.0.0.1:4000`, so it is **not** on your
+LAN. Browsing to the container's IP will fail — that is the intended behaviour, not a bug.
+
+The installer's Advanced settings offer a "Who can reach it" choice, and both installers
+take `BIND=loopback` (default) or `BIND=lan`. `BIND=lan` binds `0.0.0.0`, puts the admin
+login on your network, and sets `PUBLIC_ORIGIN` to the container's address for you. It
+stays opt-in because an installer should not quietly publish a login page to your LAN.
+
+If you leave it on loopback, three ways to get to it:
 
 **SSH tunnel** — opens nothing:
 
@@ -375,9 +411,9 @@ ssh -N -L 4000:127.0.0.1:4000 root@<container-ip>
 Browse `http://127.0.0.1:4000` locally. If SSH refuses the login, Debian's default
 `PermitRootLogin prohibit-password` is why — install your public key instead.
 
-**Publish to the LAN** — edit `docker-compose.yml` in the container, change
-`"127.0.0.1:4000:4000"` to `"4000:4000"`, then `docker compose up -d`. Now anyone on your
-LAN can reach it.
+**Publish to the LAN** — set `BIND_ADDR=0.0.0.0` in `/opt/bench/.env` (Docker) or
+`BIND_HOST=0.0.0.0` in `/etc/bench.env` (native), set `PUBLIC_ORIGIN` to the container's
+address, and restart. Now anyone on your LAN can reach it, over plain HTTP.
 
 **Tailscale** — needs `/dev/net/tun` passed into the unprivileged container:
 

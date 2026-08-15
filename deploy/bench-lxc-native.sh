@@ -26,14 +26,14 @@
 #   3. ./deploy/bench-lxc-native.sh
 #
 # Override anything via environment:
-#   CTID=922 HOSTNAME=bench STORAGE=local-lvm BRIDGE=vmbr0 \
+#   CTID=922 CT_HOSTNAME=bench STORAGE=local-lvm BRIDGE=vmbr0 \
 #   DISK_GB=6 RAM_MB=1024 CORES=2 ./deploy/bench-lxc-native.sh
 #
 set -euo pipefail
 
 # ------------------------------------------------------------------ config
 CTID="${CTID:-}"                                 # auto-picked from pvesh if empty
-HOSTNAME="${HOSTNAME:-bench}"
+CT_HOSTNAME="${CT_HOSTNAME:-bench}"
 STORAGE="${STORAGE:-local-lvm}"
 TEMPLATE_STORAGE="${TEMPLATE_STORAGE:-local}"
 BRIDGE="${BRIDGE:-vmbr0}"
@@ -50,6 +50,12 @@ NODE_MAJOR="${NODE_MAJOR:-20}"
 MONGO_VERSION="${MONGO_VERSION:-7.0}"
 ALLOW_NO_AVX="${ALLOW_NO_AVX:-0}"
 
+# loopback (default) binds 127.0.0.1 inside the container, so the only way in is
+# an SSH tunnel. lan binds 0.0.0.0 and puts the admin login on your network —
+# opt in deliberately, never by default. Validated down in preflight, once die()
+# exists.
+BIND="${BIND:-loopback}"
+
 APP_DIR=/opt/bench
 STATE_DIR=/var/lib/bench
 ENV_FILE=/etc/bench.env
@@ -63,6 +69,10 @@ command -v pct   >/dev/null || die "pct not found — run this on a Proxmox VE h
 command -v pvesh >/dev/null || die "pvesh not found — run this on a Proxmox VE host."
 [ "$(id -u)" -eq 0 ] || die "must run as root."
 [ -f "$BENCH_SRC/package.json" ] || die "no package.json under $BENCH_SRC — set BENCH_SRC to the repo."
+case "$BIND" in
+  loopback|lan) ;;
+  *) die "BIND must be 'loopback' or 'lan', got '$BIND'." ;;
+esac
 
 if [ -z "$CTID" ]; then
   CTID="$(pvesh get /cluster/nextid)"
@@ -115,9 +125,9 @@ fi
 # ------------------------------------------------------------------ create
 # Note the absence of --features: no nesting, no keyctl. Nothing here needs to
 # create nested namespaces, which is the whole point of the native path.
-say "creating unprivileged CT $CTID ($HOSTNAME) — ${CORES} cores, ${RAM_MB}MB, ${DISK_GB}G on $STORAGE"
+say "creating unprivileged CT $CTID ($CT_HOSTNAME) — ${CORES} cores, ${RAM_MB}MB, ${DISK_GB}G on $STORAGE"
 pct create "$CTID" "$TEMPLATE_VOL" \
-  --hostname "$HOSTNAME" \
+  --hostname "$CT_HOSTNAME" \
   --cores "$CORES" \
   --memory "$RAM_MB" \
   --swap 512 \
@@ -138,6 +148,20 @@ for i in $(seq 1 30); do
   sleep 2
   [ "$i" -eq 30 ] && die "container has no working DNS/network after 60s."
 done
+
+# Needed here, not just in the closing report: with BIND=lan the app's
+# PUBLIC_ORIGIN has to name the address the browser will actually use, and the
+# env file is written well before the end of this script.
+CT_IP="$(pct exec "$CTID" -- hostname -I 2>/dev/null | awk '{print $1}')"
+if [ "$BIND" = "lan" ]; then
+  [ -n "$CT_IP" ] || die "BIND=lan but the container reported no IP address."
+  BIND_HOST_VALUE="0.0.0.0"
+  ORIGIN_VALUE="http://$CT_IP:4000"
+  warn "BIND=lan — Bench will be reachable at $ORIGIN_VALUE by anyone on this network."
+else
+  BIND_HOST_VALUE="127.0.0.1"
+  ORIGIN_VALUE="http://127.0.0.1:4000"
+fi
 
 # ------------------------------------------------------------------ base packages
 say "installing base packages"
@@ -271,7 +295,7 @@ umask 077
 cat > $ENV_FILE <<EOF
 NODE_ENV=production
 PORT=4000
-BIND_HOST=127.0.0.1
+BIND_HOST=$BIND_HOST_VALUE
 DATA_DIR=$STATE_DIR
 MONGO_URL=mongodb://bench:${MONGO_PW}@127.0.0.1:27017/?authSource=admin
 MONGO_DB=bench
@@ -280,7 +304,7 @@ ADMIN_USER=admin
 ADMIN_PASSWORD=${ADMIN_PW}
 SECURE_COOKIES=false
 TRUST_PROXY=0
-PUBLIC_ORIGIN=http://127.0.0.1:4000
+PUBLIC_ORIGIN=$ORIGIN_VALUE
 EOF
 chown root:root $ENV_FILE
 chmod 600 $ENV_FILE
@@ -376,23 +400,33 @@ systemctl restart systemd-journald
 '
 
 # ------------------------------------------------------------------ report
-CT_IP="$(pct exec "$CTID" -- hostname -I 2>/dev/null | awk '{print $1}')"
+# CT_IP was captured right after boot, above.
+if [ "$BIND" = "lan" ]; then
+  ACCESS="  Open it at   : http://${CT_IP}:4000   (admin at /admin)
+  Reachable by anyone on your LAN. Put TLS in front before it leaves the house."
+else
+  ACCESS="  Inside the CT: http://127.0.0.1:4000   (admin at /admin)
+
+  Bench binds 127.0.0.1 inside the container — it is NOT on your LAN.
+  Quickest way in, opening nothing:
+    pct exec $CTID -- apt-get install -y openssh-server
+    ssh -N -L 4000:127.0.0.1:4000 root@${CT_IP:-<container-ip>}
+  then browse http://127.0.0.1:4000 on your own machine.
+  See the README section \"Reaching it from a browser\" for Tailscale too."
+fi
+
 cat <<EOF
 
 $(printf '\033[1;32m==> Bench is up in CT %s (native — no Docker)\033[0m' "$CTID")
 
   Container IP : ${CT_IP:-<check: pct exec $CTID -- hostname -I>}
-  Inside the CT: http://127.0.0.1:4000   (admin at /admin)
+$ACCESS
   MongoDB      : ${MONGO_VERSION}, bound to 127.0.0.1, authorization enabled
 
   ADMIN LOGIN
     username : admin
     password : $ADMIN_PW
     ^ change it from the Account tab, then this printout is worthless.
-
-  Bench binds 127.0.0.1 inside the container — it is NOT on your LAN.
-  See the README section "Reaching it from a browser" for the SSH tunnel,
-  LAN-publish and Tailscale options.
 
   Manage it:
     pct exec $CTID -- systemctl status bench

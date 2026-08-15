@@ -18,14 +18,14 @@
 #   3. ./deploy/bench-lxc.sh              # sensible defaults, or override below
 #
 # Override anything via environment:
-#   CTID=921 HOSTNAME=bench STORAGE=local-lvm BRIDGE=vmbr0 \
+#   CTID=921 CT_HOSTNAME=bench STORAGE=local-lvm BRIDGE=vmbr0 \
 #   DISK_GB=8 RAM_MB=1024 CORES=2 ./deploy/bench-lxc.sh
 #
 set -euo pipefail
 
 # ------------------------------------------------------------------ config
 CTID="${CTID:-}"                       # auto-picked from pvesh if empty
-HOSTNAME="${HOSTNAME:-bench}"
+CT_HOSTNAME="${CT_HOSTNAME:-bench}"
 STORAGE="${STORAGE:-local-lvm}"        # where the rootfs lives
 TEMPLATE_STORAGE="${TEMPLATE_STORAGE:-local}"  # where the template tarball lives
 BRIDGE="${BRIDGE:-vmbr0}"
@@ -38,6 +38,11 @@ BRIDGE_IP="${BRIDGE_IP:-dhcp}"         # or e.g. 192.168.1.60/24
 GATEWAY="${GATEWAY:-}"                 # required only if BRIDGE_IP is static
 BENCH_SRC="${BENCH_SRC:-$(cd "$(dirname "$0")/.." && pwd)}"
 
+# loopback (default) publishes the port on 127.0.0.1 inside the container, so
+# the only way in is an SSH tunnel. lan publishes on 0.0.0.0 and puts the admin
+# login on your network — opt in deliberately, never by default.
+BIND="${BIND:-loopback}"
+
 say()  { printf '\033[1;36m==>\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33m!! \033[0m %s\n' "$*" >&2; }
 die()  { printf '\033[1;31mxx \033[0m %s\n' "$*" >&2; exit 1; }
@@ -45,6 +50,10 @@ die()  { printf '\033[1;31mxx \033[0m %s\n' "$*" >&2; exit 1; }
 # ------------------------------------------------------------------ preflight
 command -v pct >/dev/null   || die "pct not found — run this on a Proxmox VE host."
 command -v pvesh >/dev/null || die "pvesh not found — run this on a Proxmox VE host."
+case "$BIND" in
+  loopback|lan) ;;
+  *) die "BIND must be 'loopback' or 'lan', got '$BIND'." ;;
+esac
 [ "$(id -u)" -eq 0 ]        || die "must run as root."
 [ -f "$BENCH_SRC/docker-compose.yml" ] || die "no docker-compose.yml under $BENCH_SRC — set BENCH_SRC to the repo."
 
@@ -84,9 +93,9 @@ else
 fi
 
 # ------------------------------------------------------------------ create
-say "creating unprivileged CT $CTID ($HOSTNAME) — ${CORES} cores, ${RAM_MB}MB, ${DISK_GB}G on $STORAGE"
+say "creating unprivileged CT $CTID ($CT_HOSTNAME) — ${CORES} cores, ${RAM_MB}MB, ${DISK_GB}G on $STORAGE"
 pct create "$CTID" "$TEMPLATE_VOL" \
-  --hostname "$HOSTNAME" \
+  --hostname "$CT_HOSTNAME" \
   --cores "$CORES" \
   --memory "$RAM_MB" \
   --swap 512 \
@@ -109,6 +118,20 @@ for i in $(seq 1 30); do
   sleep 2
   [ "$i" -eq 30 ] && die "container has no working DNS/network after 60s."
 done
+
+# Needed here, not just in the closing report: with BIND=lan, PUBLIC_ORIGIN has
+# to name the address the browser will actually use, and .env is written before
+# the end of this script.
+CT_IP="$(pct exec "$CTID" -- hostname -I 2>/dev/null | awk '{print $1}')"
+if [ "$BIND" = "lan" ]; then
+  [ -n "$CT_IP" ] || die "BIND=lan but the container reported no IP address."
+  BIND_ADDR="0.0.0.0"
+  ORIGIN_VALUE="http://$CT_IP:4000"
+  warn "BIND=lan — Bench will be reachable at $ORIGIN_VALUE by anyone on this network."
+else
+  BIND_ADDR="127.0.0.1"
+  ORIGIN_VALUE="http://127.0.0.1:4000"
+fi
 
 # ------------------------------------------------------------------ base + docker
 say "installing base packages and Docker inside the container"
@@ -157,6 +180,8 @@ MONGO_DB=bench
 MONGO_IMAGE=$MONGO_IMAGE
 ADMIN_USER=admin
 ADMIN_PASSWORD=$ADMIN_PW
+BIND_ADDR=$BIND_ADDR
+PUBLIC_ORIGIN=$ORIGIN_VALUE
 SECURE_COOKIES=false
 # No proxy inside the container by default. Set to 1 (and SECURE_COOKIES=true,
 # PUBLIC_ORIGIN=https://your.domain) only once Caddy/Cloudflare Tunnel is in front.
@@ -168,13 +193,26 @@ docker compose up -d --build
 "
 
 # ------------------------------------------------------------------ report
-CT_IP="$(pct exec "$CTID" -- hostname -I 2>/dev/null | awk '{print $1}')"
+# CT_IP was captured right after boot, above.
+if [ "$BIND" = "lan" ]; then
+  ACCESS="  Open it at   : http://${CT_IP}:4000   (admin at /admin)
+  Reachable by anyone on your LAN. Put TLS in front before it leaves the house."
+else
+  ACCESS="  Inside the CT: http://127.0.0.1:4000   (admin at /admin)
+
+  Bench binds 127.0.0.1 inside the container — it is NOT on your LAN.
+  Quickest way in, opening nothing:
+    pct exec $CTID -- apt-get install -y openssh-server
+    ssh -N -L 4000:127.0.0.1:4000 root@${CT_IP:-<container-ip>}
+  then browse http://127.0.0.1:4000 on your own machine."
+fi
+
 cat <<EOF
 
 $(printf '\033[1;32m==> Bench is up in CT %s\033[0m' "$CTID")
 
   Container IP : ${CT_IP:-<check: pct exec $CTID -- hostname -I>}
-  Inside the CT: http://127.0.0.1:4000   (admin at /4000/admin)
+$ACCESS
   Mongo image  : $MONGO_IMAGE
 
   ADMIN LOGIN
@@ -182,11 +220,9 @@ $(printf '\033[1;32m==> Bench is up in CT %s\033[0m' "$CTID")
     password : $ADMIN_PW
     ^ change it from the Account tab, then this printout is worthless.
 
-  Bench binds 127.0.0.1 inside the container — it is NOT on your LAN yet.
-  To reach it, either:
-    - port-forward from the host:   pct exec $CTID -- ... (or edit compose ports)
-    - or put Caddy/Cloudflare Tunnel in front and set SECURE_COOKIES=true, then:
-        cd /opt/bench && docker compose up -d
+  To publish it properly, put Caddy/Cloudflare Tunnel in front, set
+  SECURE_COOKIES=true and TRUST_PROXY=1 in /opt/bench/.env, then:
+      cd /opt/bench && docker compose up -d
 
   Manage it:
     pct exec $CTID -- bash -lc 'cd /opt/bench && docker compose ps'

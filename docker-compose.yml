@@ -65,11 +65,12 @@ services:
     volumes:
       - bench-uploads:/data
     ports:
-      # Loopback only. This is NOT exposed to your LAN or the internet — only
-      # this machine can reach it. The mapping has to exist at all or your own
-      # browser can't connect either.
-      # To publish later: put Caddy in front, don't change this to 0.0.0.0.
-      - "127.0.0.1:4000:4000"
+      # Loopback by default. This is NOT exposed to your LAN or the internet —
+      # only this machine can reach it. The mapping has to exist at all or your
+      # own browser can't connect either.
+      # BIND_ADDR=0.0.0.0 in .env publishes it to the LAN; the LXC installers
+      # set that for you when you pick "lan". Prefer putting Caddy in front.
+      - "${BIND_ADDR:-127.0.0.1}:4000:4000"
 
 volumes:
   mongo-data:
