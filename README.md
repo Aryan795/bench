@@ -388,6 +388,42 @@ On LVM-thin or ZFS the rootfs is thin-provisioned, so an oversized `DISK_GB` cos
 real space. Reclaim build cache any time with `docker builder prune` (~480 MB after a
 rebuild). To shrink the worst case further, lower `UPLOAD_BUDGET_BYTES`.
 
+### The admin login
+
+Both installers create the admin user `admin` with a **randomly generated** password —
+there is no fixed default, deliberately. It is printed once in the closing summary of the
+install run. If you missed it, read it back from the container's env file (the path
+differs between the two installers, so this checks both):
+
+```bash
+pct exec <CTID> -- sh -c \
+  'grep -H -E "ADMIN_USER|ADMIN_PASSWORD" /opt/bench/.env /etc/bench.env 2>/dev/null'
+```
+
+Log in at `/admin` in a **browser** with those, then change the password from the
+**Account** tab — once you do, the printed and stored value is worthless.
+
+That `admin` account is a Bench login, **not** a Linux user. Typing it at the container's
+`login:` console prompt will always fail — see below.
+
+### A shell inside the container
+
+The container is created with **no root password**, so the Proxmox web-UI *Console* button
+(and `pct console`) lands on a `login:` prompt that nothing gets past — `admin` is the web
+app, not the OS, and `root` has no password yet. Get in one of two ways, from the Proxmox
+host:
+
+```bash
+pct enter <CTID>          # a root shell, no password needed — the quick way
+```
+
+To use the web-UI console or `pct console` instead, give `root` a password first, then log
+in as `root` (never `admin`):
+
+```bash
+pct exec <CTID> -- passwd
+```
+
 ### Reaching it from a browser
 
 By default, inside the container Bench binds `127.0.0.1:4000`, so it is **not** on your
@@ -623,27 +659,6 @@ controls already present; four were real and were fixed. Current posture:
   `javascript:` URL is dropped rather than stored.
 - **Break-glass:** rotate `SESSION_SECRET` and restart to invalidate every session
   everywhere, immediately.
-
-### Known limitations
-
-**Markdown is rendered without HTML sanitising.** A raw `<script>` block in a post body is
-passed straight through to the page. Only the authenticated admin can author content, so
-the only person who can inject script is you. `javascript:` and `vbscript:` URLs in links
-and images *are* stripped. **Add a sanitiser before you add a second author.**
-
-**The login throttle keys on `req.ip`, which Docker collapses.** Requests arriving through
-a published port appear to come from the bridge gateway (`172.17.0.1`), not the real
-client — so the per-IP limit behaves as one global bucket. Consequences:
-
-- Loopback-only (the default): no impact, you are the only client.
-- Published to a LAN with no proxy: any device can spend the 8 attempts and lock *you*
-  out of the admin panel for 15 minutes. It cannot help them guess the password — it is a
-  lockout nuisance, not a bypass.
-- Behind a reverse proxy: set `TRUST_PROXY` to the real hop count. Express then reads the
-  client address from `X-Forwarded-For` and per-IP limiting works properly again.
-
-Fixing this inside the app is not possible — the source address genuinely is the gateway
-by the time Node sees it. Put a proxy in front and set `TRUST_PROXY`.
 
 ---
 
