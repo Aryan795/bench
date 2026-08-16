@@ -464,8 +464,8 @@ Then `tailscale up` inside, and reach it over your tailnet with nothing exposed 
 
 ## Putting it on the internet
 
-Leave the port binding on loopback and put a reverse proxy in front of it. Then set
-`SECURE_COOKIES=true`, `TRUST_PROXY=1`, and `PUBLIC_ORIGIN` to your real URL, and restart.
+Leave the port binding on loopback and put a reverse proxy (Caddy here) in front of it to
+terminate TLS:
 
 ```caddy
 bench.example.com {
@@ -473,9 +473,26 @@ bench.example.com {
 }
 ```
 
+Then set three values **in the same env file the installer wrote** — `/etc/bench.env` on a
+native install, `/opt/bench/.env` on a Docker install:
+
+```ini
+SECURE_COOKIES=true
+TRUST_PROXY=1
+PUBLIC_ORIGIN=https://bench.example.com
+```
+
+and restart so they take effect:
+
+```bash
+systemctl restart bench                 # native install
+cd /opt/bench && docker compose up -d   # Docker install
+```
+
 All three settings matter together: without `SECURE_COOKIES` the session cookie travels
 in the clear, without `TRUST_PROXY` the rate-limiter counts every visitor as the proxy,
 and without a correct `PUBLIC_ORIGIN` the CSRF gate will reject your own admin requests.
+`TRUST_PROXY=1` means "trust one proxy hop" — raise it only if you chain more proxies.
 
 ---
 
