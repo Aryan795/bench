@@ -675,6 +675,14 @@ your node *has* AVX but the container cannot see it, set the CPU type to `host`.
 **`docker: command not found` inside a fresh LXC.** The container is missing
 `nesting=1,keyctl=1`. Check with `pct config <CTID> | grep features`.
 
+**Native install: `bench.service` fails with `status=226/NAMESPACE`.** systemd could not
+set up the unit's filesystem sandbox (`ProtectSystem`, `PrivateTmp`, `PrivateDevices`, …) —
+an unprivileged LXC is not allowed to create those mount namespaces, so `ExecStart` aborts
+before Node runs. The installer now ships an LXC-safe unit; if an older install hits this,
+disable those directives with `systemctl edit bench` (add `ProtectSystem=no`,
+`PrivateTmp=no`, `PrivateDevices=no`, `ProtectHome=no`, `ProtectProc=default`,
+`ReadWritePaths=`), then `systemctl daemon-reload && systemctl restart bench`.
+
 **Changed `MONGO_PASSWORD` and now it will not connect.** Mongo only reads that variable
 when initialising an empty volume. Either revert it, or `docker compose down -v` and start
 over — which erases your posts.

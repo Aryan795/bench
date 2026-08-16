@@ -337,20 +337,16 @@ ExecStart=/usr/bin/node $APP_DIR/server/server.js
 Restart=on-failure
 RestartSec=5
 
-# --- sandboxing -------------------------------------------------------
+# --- sandboxing (unprivileged-LXC-safe) -------------------------------
+# This unit runs inside an unprivileged Proxmox LXC, which may NOT create
+# the mount namespaces that systemd's filesystem-sandbox directives need
+# (ProtectSystem, PrivateTmp, PrivateDevices, ProtectHome, ProtectKernel*,
+# ProtectControlGroups, ProtectProc, ReadWritePaths, ...). Any one of them
+# makes systemd abort ExecStart with status=226/NAMESPACE before Node even
+# runs. Keep only the restrictions that need no new namespace; running as
+# the unprivileged bench user is the real containment. See README
+# "Troubleshooting".
 NoNewPrivileges=yes
-PrivateTmp=yes
-PrivateDevices=yes
-ProtectSystem=strict
-ProtectHome=yes
-ProtectKernelTunables=yes
-ProtectKernelModules=yes
-ProtectKernelLogs=yes
-ProtectControlGroups=yes
-ProtectClock=yes
-ProtectHostname=yes
-ProtectProc=invisible
-RestrictNamespaces=yes
 RestrictRealtime=yes
 RestrictSUIDSGID=yes
 RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
@@ -361,10 +357,9 @@ SystemCallFilter=@system-service
 SystemCallErrorNumber=EPERM
 UMask=0077
 
-# The only writable path. ProtectSystem=strict makes everything else,
-# including $APP_DIR, read-only to this process.
+# Writable state directory for uploads/data, created and chowned to bench.
+# A plain mkdir+chown (no namespace mount), so it is fine in an LXC.
 StateDirectory=bench
-ReadWritePaths=$STATE_DIR
 
 [Install]
 WantedBy=multi-user.target
