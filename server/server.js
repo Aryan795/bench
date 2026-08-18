@@ -14,6 +14,7 @@ const {
 } = require("./db");
 const auth = require("./auth");
 const { seedIfEmpty } = require("./seed");
+const { mdToPost, decodeText } = require("./import");
 
 const PORT = Number(process.env.PORT || 4000);
 const PUBLIC_DIR = path.join(__dirname, "..", "public");
@@ -254,6 +255,32 @@ const upload = multer({
   fileFilter: (_req, file, cb) => {
     if (!ALLOWED_IMAGE.has(file.mimetype)) {
       return cb(new Error("Only JPEG, PNG, WebP, GIF or SVG images are accepted"));
+    }
+    cb(null, true);
+  }
+});
+
+/* ---------------------------------------------------------------
+   Markdown import
+
+   Held in memory, not written to UPLOAD_DIR: a .md file is parsed and
+   discarded in the same request, so persisting it would leave litter in
+   the image library and eat the upload budget for nothing.
+   --------------------------------------------------------------- */
+
+const MD_EXT = /\.(md|markdown|mdown|mkd|txt)$/i;
+const MD_MAX_FILES = 20;
+
+const mdUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 2 * 1024 * 1024, files: MD_MAX_FILES },
+  fileFilter: (_req, file, cb) => {
+    // Filtered on extension, not mimetype: browsers report .md as
+    // text/markdown, text/plain or application/octet-stream depending on
+    // the OS, so the mimetype is not a usable signal here. decodeText()
+    // is what actually rejects a binary file wearing a .md name.
+    if (!MD_EXT.test(file.originalname || "")) {
+      return cb(new Error("Only .md, .markdown or .txt files are accepted"));
     }
     cb(null, true);
   }
@@ -554,6 +581,74 @@ admin.delete("/projects/:id", async (req, res, next) => {
 
 admin.post("/preview", (req, res) => {
   res.json({ html: render((req.body && req.body.bodyMd) || "") });
+});
+
+/**
+ * Import Markdown files as posts.
+ *
+ *   POST /api/admin/import            -> parse only, returns the parsed fields
+ *   POST /api/admin/import?create=1   -> parse and insert each file as a post
+ *
+ * The parse-only mode is what a single file uses: the admin panel loads the
+ * result into the editor so it can be reviewed and saved through the normal
+ * path. create=1 is for bulk, where opening twelve editors is not useful.
+ *
+ * Either way the fields go through postPayload(), so an import cannot write a
+ * document a hand-authored post could not.
+ */
+admin.post("/import", (req, res, next) => {
+  mdUpload.array("files", MD_MAX_FILES)(req, res, async (err) => {
+    if (err) {
+      if (err.code === "LIMIT_FILE_SIZE") return bad(res, "That file is larger than 2 MB");
+      if (err.code === "LIMIT_FILE_COUNT") return bad(res, `At most ${MD_MAX_FILES} files at a time`);
+      return bad(res, err.message);
+    }
+
+    const files = req.files || [];
+    if (!files.length) return bad(res, "No file received");
+
+    try {
+      const parsed = [];
+      for (const f of files) {
+        try {
+          parsed.push(mdToPost(decodeText(f.buffer), f.originalname));
+        } catch (e) {
+          // One unreadable file must not sink the whole batch.
+          parsed.push({ filename: String(f.originalname || "").slice(0, 200), error: e.message });
+        }
+      }
+
+      if (req.query.create !== "1") {
+        const first = parsed[0];
+        if (first.error) return bad(res, first.error);
+        return res.json({ created: false, posts: parsed.filter(p => !p.error), skipped: parsed.filter(p => p.error) });
+      }
+
+      const results = [];
+      for (const p of parsed) {
+        if (p.error) {
+          results.push({ ok: false, filename: p.filename, error: p.error });
+          continue;
+        }
+        try {
+          const doc = await postPayload(p);
+          doc.createdAt = new Date().toISOString();
+          doc.publishedAt = doc.status === "published" ? new Date().toISOString() : null;
+          const r = await state.posts.insertOne(doc);
+          results.push({
+            ok: true, filename: p.filename, id: String(r.insertedId),
+            title: doc.title, slug: doc.slug, status: doc.status, warnings: p.warnings
+          });
+        } catch (e) {
+          results.push({
+            ok: false, filename: p.filename,
+            error: e && e.code === 11000 ? "That slug is already taken" : (e.message || "Import failed")
+          });
+        }
+      }
+      res.status(201).json({ created: true, results });
+    } catch (e) { next(e); }
+  });
 });
 
 const UPLOAD_BUDGET_BYTES = Number(process.env.UPLOAD_BUDGET_BYTES || 512 * 1024 * 1024);

@@ -144,6 +144,59 @@ bare project name looks unfinished beside a two-line title.
 
 Drafts are invisible to the public API. Only `status: published` is ever served.
 
+### Importing a Markdown file
+
+**Posts → Import .md** takes a file you already wrote and turns it into a post. Drop
+files on the modal or pick them.
+
+- **One file** is parsed and loaded into the editor. Nothing is written until you press
+  Save, so you can read it over first — or walk away and it never existed.
+- **Several files** are created as drafts in one pass, and the modal reports what landed.
+
+Fields come from YAML front matter when it is there:
+
+```markdown
+---
+title: The Only Honest Benchmark
+dek: What a year of measuring the wrong thing taught me
+slug: the-only-honest-benchmark
+category: Field notes
+status: draft
+project: kettle
+cover: /uploads/1a2b3c-plate.jpg
+---
+
+The body starts here.
+```
+
+Every key is optional. Without front matter the file is read the way most drafts are
+already written: the first `# Heading` becomes the title, and a `##` or `###` line
+directly under it becomes the standfirst. Both are removed from the body, because the
+site renders the title itself and you would otherwise see it twice. If there is no
+heading at all, the filename becomes the title.
+
+Imports arrive as **drafts** unless the front matter says `status: published`. The slug
+is derived from the title when unset, and a clash is resolved the same way it is
+everywhere else — `-2`, `-3`, and so on — rather than failing the import.
+
+The parser reads single-line `key: value` entries only. Lists and block scalars are
+reported as unread rather than half-parsed, so a `tags:` block tells you it was skipped
+instead of silently importing as empty.
+
+Before saving, the panel lists anything worth a second look:
+
+- image paths that will not resolve, because a file written elsewhere usually points at
+  something like `images/hero.jpg` — upload the images, then re-point the paths at
+  `/uploads/`
+- raw HTML that can execute (`<script>`, `<iframe>`, an `on…` handler). Markdown is
+  rendered as-is, so this matters most for a file you did not write yourself
+- a missing standfirst, or a title that had to fall back to the filename
+- a front matter `date`, which is ignored — publishing stamps the date when the status
+  becomes `published`
+
+Files must be `.md`, `.markdown`, `.mdown`, `.mkd` or `.txt`, at most 2 MB each and 20
+at a time. They are parsed in memory and never written to the image library.
+
 ### The editor
 
 The body is Markdown and stays Markdown on disk, so your posts remain portable,
@@ -630,6 +683,8 @@ GET    /api/admin/uploads     list the image library
 POST   /api/admin/upload      multipart, field name "image"
 DELETE /api/admin/uploads/:name
 
+POST   /api/admin/import      multipart, field name "files" — parse .md into post fields
+POST   /api/admin/import?create=1   …and insert each one as a post
 POST   /api/admin/preview     { bodyMd } -> { html }
 POST   /api/admin/password    { current, next }
 POST   /api/admin/logout-all  bump the session epoch

@@ -162,6 +162,21 @@ textarea.body { min-height: 26rem; }
 
 .hidden { display: none !important; }
 .empty { color: var(--muted); font-style: italic; padding: 2rem 0; }
+
+/* markdown import */
+.dropzone { border: 1px dashed var(--hairline); padding: 2.25rem 1.25rem; text-align: center; }
+.dropzone.drop { border-color: var(--ink); border-style: solid; background: var(--field); }
+.dropzone p { margin: 0 0 .5rem; }
+.dropzone code { font-family: var(--mono); font-size: .82em; }
+.imp-list { list-style: none; margin: 1.5rem 0 0; padding: 0; }
+.imp-list li { border-top: 1px solid var(--hairline); padding: .8rem 0; }
+.imp-list li:last-child { border-bottom: 1px solid var(--hairline); }
+.imp-list .name { font-family: var(--mono); font-size: .78rem; color: var(--muted); }
+.imp-list .fail { color: var(--bad); }
+.warns { list-style: none; margin: .45rem 0 0; padding: 0; }
+.warns li { border: 0; padding: .1rem 0 .1rem 1.1rem; text-indent: -1.1rem;
+  color: var(--warn); font-size: .82rem; font-style: italic; }
+.warns li::before { content: "! "; font-style: normal; font-family: var(--mono); }
 </style>
 </head>
 <body>
@@ -208,7 +223,10 @@ textarea.body { min-height: 26rem; }
     <section id="tab-posts">
       <div class="head-row">
         <h2>Posts</h2>
-        <button class="act" id="newPost">New post</button>
+        <div class="rowacts">
+          <button class="link" id="importBtn">Import .md</button>
+          <button class="act" id="newPost">New post</button>
+        </div>
       </div>
       <div class="tablewrap"><table>
         <thead><tr><th>Title</th><th>Status</th><th>Published</th><th>Read</th><th></th></tr></thead>
@@ -430,6 +448,33 @@ textarea.body { min-height: 26rem; }
 </div>
 
 <input type="file" id="hiddenFile" accept="image/*" multiple class="hidden">
+
+<!-- ============ IMPORT MARKDOWN ============ -->
+<div class="modal hidden" id="importModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3>Import Markdown</h3>
+      <button class="link" id="importClose">Close</button>
+    </div>
+    <div class="modal-body">
+      <div class="dropzone" id="importDrop">
+        <p>Drop <code>.md</code> files here, or
+          <button class="link" type="button" id="importPick">choose files</button>.</p>
+        <span class="hint">One file opens in the editor to review before saving. Several are
+          created as drafts in one go.</span>
+      </div>
+      <p class="hint" style="margin-top:1rem">
+        Front matter is read if present — <code>title</code>, <code>dek</code>, <code>slug</code>,
+        <code>category</code>, <code>status</code>, <code>project</code>, <code>cover</code>.
+        Otherwise the first <code># Heading</code> becomes the title and a <code>##</code> line
+        under it becomes the standfirst. Imports arrive as drafts unless the front matter says
+        <code>status: published</code>.
+      </p>
+      <div id="importResult"></div>
+    </div>
+  </div>
+</div>
+<input type="file" id="hiddenMd" accept=".md,.markdown,.mdown,.mkd,.txt,text/markdown,text/plain" multiple class="hidden">
 
 <script>
 (function () {
@@ -941,6 +986,128 @@ textarea.body { min-height: 26rem; }
   $("libModal").addEventListener("click", function (e) { if (e.target === this) closeLibrary(); });
   document.addEventListener("keydown", function (e) {
     if (e.key === "Escape" && !$("libModal").classList.contains("hidden")) closeLibrary();
+  });
+
+  /* ---------- markdown import ---------- */
+
+  var hiddenMd = $("hiddenMd");
+  var MD_RE = /\.(md|markdown|mdown|mkd|txt)$/i;
+
+  function warnsHtml(ws) {
+    if (!ws || !ws.length) return "";
+    return '<ul class="warns">' + ws.map(function (w) { return "<li>" + esc(w) + "</li>"; }).join("") + "</ul>";
+  }
+
+  function openImport() { $("importResult").innerHTML = ""; $("importModal").classList.remove("hidden"); }
+  function closeImport() { $("importModal").classList.add("hidden"); }
+
+  /** Loads a parsed file into a blank editor. Nothing is written until the
+   *  normal Save, so an import can be abandoned by navigating away. */
+  function loadIntoEditor(p) {
+    closeImport();
+    openPost(null);
+    $("p-title").value = p.title;
+    $("p-dek").value = p.dek;
+    $("p-body").value = p.bodyMd;
+    $("p-slug").value = p.slug || "";
+    $("p-category").value = p.category || "Essay";
+    $("p-status").value = p.status || "draft";
+    $("p-project").value = p.projectSlug || "";
+    state.cover = p.cover || null;
+    renderCover();
+    $("postEditTitle").textContent = "Imported — " + p.filename;
+    $("p-meta").innerHTML = "Not saved yet." + warnsHtml(p.warnings);
+    updateCount($("p-body"));
+    schedulePreview($("p-body"));
+  }
+
+  function renderImportResults(results) {
+    var ok = 0;
+    $("importResult").innerHTML = '<ul class="imp-list">' + results.map(function (r) {
+      if (!r.ok) return '<li><span class="fail">' + esc(r.filename) + " — " + esc(r.error) + "</span></li>";
+      ok++;
+      return '<li><strong>' + esc(r.title) + '</strong> ' +
+        '<span class="name">/' + esc(r.slug) + '</span> ' +
+        '<span class="pill ' + r.status + '">' + r.status + '</span>' +
+        warnsHtml(r.warnings) + '</li>';
+    }).join("") + "</ul>";
+    return ok;
+  }
+
+  /** One file is parsed and handed to the editor for review; several are
+   *  created as drafts server-side, because reviewing twelve editors is not
+   *  a review. */
+  async function importFiles(list) {
+    var files = Array.prototype.filter.call(list || [], function (f) { return MD_RE.test(f.name); });
+    if (!files.length) { toast("Choose a .md file", true); return; }
+
+    var bulk = files.length > 1;
+    var fd = new FormData();
+    files.forEach(function (f) { fd.append("files", f); });
+
+    $("importResult").innerHTML = '<p class="empty">Reading ' + files.length +
+      (bulk ? " files…" : " file…") + "</p>";
+
+    try {
+      var res = await fetch("/api/admin/import" + (bulk ? "?create=1" : ""), {
+        method: "POST", credentials: "same-origin", body: fd
+      });
+      if (res.status === 401) { closeImport(); showLogin(); return; }
+
+      var data = null;
+      try { data = await res.json(); } catch (e) { /* empty body */ }
+      if (!res.ok) throw new Error((data && data.error) || ("Import failed (" + res.status + ")"));
+
+      if (!data.created) {
+        if (!data.posts || !data.posts.length) throw new Error("Nothing to import");
+        loadIntoEditor(data.posts[0]);
+        toast("Imported — review it, then save");
+        return;
+      }
+
+      var ok = renderImportResults(data.results);
+      await loadAll();
+      toast(ok + " of " + data.results.length + " imported as drafts", ok === 0);
+    } catch (err) {
+      $("importResult").innerHTML = '<p class="empty">' + esc(err.message) + "</p>";
+      toast(err.message, true);
+    }
+  }
+
+  $("importBtn").addEventListener("click", openImport);
+  $("importClose").addEventListener("click", closeImport);
+  $("importPick").addEventListener("click", function () { hiddenMd.click(); });
+  $("importModal").addEventListener("click", function (e) { if (e.target === this) closeImport(); });
+
+  hiddenMd.addEventListener("change", function () {
+    // Copy the list before clearing the input: reading .files after the reset
+    // would give an empty list, and the reset is what lets the same file be
+    // chosen twice in a row.
+    var files = Array.prototype.slice.call(this.files || []);
+    this.value = "";
+    importFiles(files);
+  });
+
+  // The whole modal is the drop target, not just the dashed box — and the
+  // default must be prevented either way, or a near-miss drop navigates the
+  // browser to the file and loses whatever is in the editor.
+  (function () {
+    var modal = $("importModal");
+    var zone = $("importDrop");
+    ["dragenter", "dragover"].forEach(function (ev) {
+      modal.addEventListener(ev, function (e) { e.preventDefault(); zone.classList.add("drop"); });
+    });
+    ["dragleave", "dragend", "drop"].forEach(function (ev) {
+      modal.addEventListener(ev, function () { zone.classList.remove("drop"); });
+    });
+    modal.addEventListener("drop", function (e) {
+      e.preventDefault();
+      importFiles((e.dataTransfer && e.dataTransfer.files) || []);
+    });
+  })();
+
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && !$("importModal").classList.contains("hidden")) closeImport();
   });
 
   $("postForm").addEventListener("submit", async function (e) {
