@@ -146,12 +146,12 @@ Drafts are invisible to the public API. Only `status: published` is ever served.
 
 ### Importing a Markdown file
 
-**Posts → Import .md** takes a file you already wrote and turns it into a post. Drop
-files on the modal or pick them.
+Both editors have an **Import .md** link in the header, next to *Back to*. It takes a
+file you already wrote and fills the editor in front of you — the post editor or the
+project editor. Drop a file on the modal, or pick one.
 
-- **One file** is parsed and loaded into the editor. Nothing is written until you press
-  Save, so you can read it over first — or walk away and it never existed.
-- **Several files** are created as drafts in one pass, and the modal reports what landed.
+Nothing is written until you press Save, so you can read it over first, or walk away and
+it never existed. Importing into a draft that already has a title or body asks first.
 
 Fields come from YAML front matter when it is there:
 
@@ -160,8 +160,8 @@ Fields come from YAML front matter when it is there:
 title: The Only Honest Benchmark
 dek: What a year of measuring the wrong thing taught me
 slug: the-only-honest-benchmark
-category: Field notes
 status: draft
+category: Field notes
 project: kettle
 cover: /uploads/1a2b3c-plate.jpg
 ---
@@ -169,21 +169,32 @@ cover: /uploads/1a2b3c-plate.jpg
 The body starts here.
 ```
 
-Every key is optional. Without front matter the file is read the way most drafts are
-already written: the first `# Heading` becomes the title, and a `##` or `###` line
-directly under it becomes the standfirst. Both are removed from the body, because the
-site renders the title itself and you would otherwise see it twice. If there is no
-heading at all, the filename becomes the title.
+Every key is optional, and **a key the file does not mention is left exactly as it is** —
+an import into a half-written draft cannot blank the fields it says nothing about.
 
-Imports arrive as **drafts** unless the front matter says `status: published`. The slug
-is derived from the title when unset, and a clash is resolved the same way it is
-everywhere else — `-2`, `-3`, and so on — rather than failing the import.
+`title`, `dek`, `slug` and `status` work in both editors. The rest depend on which one is
+open:
+
+| Editor | Also reads |
+|---|---|
+| Post | `category`, `project`, `cover` |
+| Project | `headline`, `domain`, `year`, `state`, `metric`, `metricKey`, `plate` |
+
+Front matter keys are matched case-insensitively, so `metricKey` and `metrickey` are the
+same key. A value that no dropdown accepts — `domain: software`, say — leaves that field
+untouched rather than blanking it.
+
+Without front matter the file is read the way most drafts are already written: the first
+`# Heading` becomes the title, and a `##` or `###` line directly under it becomes the
+standfirst. Both are removed from the body, because the site renders the title itself and
+you would otherwise see it twice. If there is no heading at all, the filename becomes the
+title.
 
 The parser reads single-line `key: value` entries only. Lists and block scalars are
 reported as unread rather than half-parsed, so a `tags:` block tells you it was skipped
-instead of silently importing as empty.
+instead of importing as empty.
 
-Before saving, the panel lists anything worth a second look:
+After an import the modal lists what it filled in, and anything worth a second look:
 
 - image paths that will not resolve, because a file written elsewhere usually points at
   something like `images/hero.jpg` — upload the images, then re-point the paths at
@@ -194,8 +205,8 @@ Before saving, the panel lists anything worth a second look:
 - a front matter `date`, which is ignored — publishing stamps the date when the status
   becomes `published`
 
-Files must be `.md`, `.markdown`, `.mdown`, `.mkd` or `.txt`, at most 2 MB each and 20
-at a time. They are parsed in memory and never written to the image library.
+Files must be `.md`, `.markdown`, `.mdown`, `.mkd` or `.txt`, and at most 2 MB. They are
+parsed in memory and never written to the image library.
 
 ### The editor
 
@@ -683,8 +694,7 @@ GET    /api/admin/uploads     list the image library
 POST   /api/admin/upload      multipart, field name "image"
 DELETE /api/admin/uploads/:name
 
-POST   /api/admin/import      multipart, field name "files" — parse .md into post fields
-POST   /api/admin/import?create=1   …and insert each one as a post
+POST   /api/admin/import      multipart, field name "file" — parse .md into editor fields
 POST   /api/admin/preview     { bodyMd } -> { html }
 POST   /api/admin/password    { current, next }
 POST   /api/admin/logout-all  bump the session epoch

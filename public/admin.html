@@ -223,10 +223,7 @@ textarea.body { min-height: 26rem; }
     <section id="tab-posts">
       <div class="head-row">
         <h2>Posts</h2>
-        <div class="rowacts">
-          <button class="link" id="importBtn">Import .md</button>
-          <button class="act" id="newPost">New post</button>
-        </div>
+        <button class="act" id="newPost">New post</button>
       </div>
       <div class="tablewrap"><table>
         <thead><tr><th>Title</th><th>Status</th><th>Published</th><th>Read</th><th></th></tr></thead>
@@ -273,7 +270,10 @@ textarea.body { min-height: 26rem; }
     <section id="tab-postEdit" class="hidden">
       <div class="head-row">
         <h2 id="postEditTitle">New post</h2>
-        <button class="link" data-back="posts">← Back to posts</button>
+        <div class="rowacts">
+          <button class="link" id="importPostBtn">Import .md</button>
+          <button class="link" data-back="posts">← Back to posts</button>
+        </div>
       </div>
       <form id="postForm" class="grid2">
         <div>
@@ -344,7 +344,10 @@ textarea.body { min-height: 26rem; }
     <section id="tab-projectEdit" class="hidden">
       <div class="head-row">
         <h2 id="projectEditTitle">New project</h2>
-        <button class="link" data-back="projects">← Back to projects</button>
+        <div class="rowacts">
+          <button class="link" id="importProjectBtn">Import .md</button>
+          <button class="link" data-back="projects">← Back to projects</button>
+        </div>
       </div>
       <form id="projectForm" class="grid2">
         <div>
@@ -458,23 +461,23 @@ textarea.body { min-height: 26rem; }
     </div>
     <div class="modal-body">
       <div class="dropzone" id="importDrop">
-        <p>Drop <code>.md</code> files here, or
-          <button class="link" type="button" id="importPick">choose files</button>.</p>
-        <span class="hint">One file opens in the editor to review before saving. Several are
-          created as drafts in one go.</span>
+        <p>Drop a <code>.md</code> file here, or
+          <button class="link" type="button" id="importPick">choose a file</button>.</p>
+        <span class="hint">It fills in the editor you have open. Nothing is saved until you
+          press Save, so you can read it over first.</span>
       </div>
       <p class="hint" style="margin-top:1rem">
-        Front matter is read if present — <code>title</code>, <code>dek</code>, <code>slug</code>,
-        <code>category</code>, <code>status</code>, <code>project</code>, <code>cover</code>.
-        Otherwise the first <code># Heading</code> becomes the title and a <code>##</code> line
-        under it becomes the standfirst. Imports arrive as drafts unless the front matter says
-        <code>status: published</code>.
+        Without front matter, the first <code># Heading</code> becomes the title and a
+        <code>##</code> line under it becomes the standfirst — both are removed from the body.
+        Front matter is read when present: <code>title</code>, <code>dek</code>,
+        <code>slug</code>, <code>status</code>, and <code id="importKeys">category</code>.
+        Any field the file does not mention is left exactly as it is.
       </p>
       <div id="importResult"></div>
     </div>
   </div>
 </div>
-<input type="file" id="hiddenMd" accept=".md,.markdown,.mdown,.mkd,.txt,text/markdown,text/plain" multiple class="hidden">
+<input type="file" id="hiddenMd" accept=".md,.markdown,.mdown,.mkd,.txt,text/markdown,text/plain" class="hidden">
 
 <script>
 (function () {
@@ -992,100 +995,138 @@ textarea.body { min-height: 26rem; }
 
   var hiddenMd = $("hiddenMd");
   var MD_RE = /\.(md|markdown|mdown|mkd|txt)$/i;
+  var importKind = "post";
+
+  // Front matter keys each editor understands. Shown in the modal so the list
+  // can never drift out of step with what the fill below actually reads.
+  var IMPORT_KEYS = {
+    post: "category, project, cover",
+    project: "headline, domain, year, state, metric, metricKey, plate"
+  };
 
   function warnsHtml(ws) {
     if (!ws || !ws.length) return "";
     return '<ul class="warns">' + ws.map(function (w) { return "<li>" + esc(w) + "</li>"; }).join("") + "</ul>";
   }
 
-  function openImport() { $("importResult").innerHTML = ""; $("importModal").classList.remove("hidden"); }
+  function openImport(kind) {
+    importKind = kind;
+    $("importKeys").textContent = IMPORT_KEYS[kind];
+    $("importResult").innerHTML = "";
+    $("importModal").classList.remove("hidden");
+  }
+
   function closeImport() { $("importModal").classList.add("hidden"); }
 
-  /** Loads a parsed file into a blank editor. Nothing is written until the
-   *  normal Save, so an import can be abandoned by navigating away. */
-  function loadIntoEditor(p) {
-    closeImport();
-    openPost(null);
+  /** Whether the open editor already holds work an import would overwrite. */
+  function editorHasContent() {
+    var k = importKind === "post" ? "p" : "j";
+    return !!($(k + "-title").value.trim() || $(k + "-body").value.trim());
+  }
+
+  /**
+   * Sets a field only when the file said something about it, so importing into
+   * a half-written draft cannot blank the fields it never mentioned.
+   */
+  function setIf(id, value, label, filled) {
+    if (value === undefined || value === null || String(value) === "") return;
+    var el = $(id);
+    var prev = el.value;
+    el.value = value;
+    // A <select> silently refuses a value with no matching option, which would
+    // leave the control blank. Put the old value back instead.
+    if (el.tagName === "SELECT" && el.value !== String(value)) { el.value = prev; return; }
+    filled.push(label);
+  }
+
+  function fillPost(p) {
+    var filled = ["title", "body"];
     $("p-title").value = p.title;
-    $("p-dek").value = p.dek;
     $("p-body").value = p.bodyMd;
-    $("p-slug").value = p.slug || "";
-    $("p-category").value = p.category || "Essay";
-    $("p-status").value = p.status || "draft";
-    $("p-project").value = p.projectSlug || "";
-    state.cover = p.cover || null;
-    renderCover();
-    $("postEditTitle").textContent = "Imported — " + p.filename;
-    $("p-meta").innerHTML = "Not saved yet." + warnsHtml(p.warnings);
+    setIf("p-dek", p.dek, "standfirst", filled);
+    setIf("p-slug", p.fm.slug, "slug", filled);
+    setIf("p-category", p.fm.category, "category", filled);
+    setIf("p-status", p.fm.status, "status", filled);
+    setIf("p-project", p.fm.project || p.fm.projectslug, "linked project", filled);
+    if (p.cover) { state.cover = p.cover; renderCover(); filled.push("cover"); }
     updateCount($("p-body"));
     schedulePreview($("p-body"));
+    return filled;
   }
 
-  function renderImportResults(results) {
-    var ok = 0;
-    $("importResult").innerHTML = '<ul class="imp-list">' + results.map(function (r) {
-      if (!r.ok) return '<li><span class="fail">' + esc(r.filename) + " — " + esc(r.error) + "</span></li>";
-      ok++;
-      return '<li><strong>' + esc(r.title) + '</strong> ' +
-        '<span class="name">/' + esc(r.slug) + '</span> ' +
-        '<span class="pill ' + r.status + '">' + r.status + '</span>' +
-        warnsHtml(r.warnings) + '</li>';
-    }).join("") + "</ul>";
-    return ok;
+  function fillProject(p) {
+    var filled = ["title", "body"];
+    $("j-title").value = p.title;
+    $("j-body").value = p.bodyMd;
+    setIf("j-dek", p.dek, "standfirst", filled);
+    setIf("j-slug", p.fm.slug, "slug", filled);
+    setIf("j-status", p.fm.status, "status", filled);
+    setIf("j-headline", p.fm.headline, "card headline", filled);
+    setIf("j-domain", p.fm.domain, "domain", filled);
+    setIf("j-year", p.fm.year, "year", filled);
+    setIf("j-state", p.fm.state, "state", filled);
+    setIf("j-metric", p.fm.metric, "metric", filled);
+    setIf("j-metricKey", p.fm.metrickey || p.fm.metric_key, "metric label", filled);
+    setIf("j-plate", p.fm.plate, "plate", filled);
+    // Projects are illustrated by a plate, not a cover, so there is nowhere
+    // for a cover to go — say so rather than dropping it in silence.
+    if (p.cover) {
+      p.warnings = p.warnings.concat(["A project uses a plate rather than a cover image, so the cover was ignored."]);
+    }
+    updateCount($("j-body"));
+    schedulePreview($("j-body"));
+    return filled;
   }
 
-  /** One file is parsed and handed to the editor for review; several are
-   *  created as drafts server-side, because reviewing twelve editors is not
-   *  a review. */
-  async function importFiles(list) {
-    var files = Array.prototype.filter.call(list || [], function (f) { return MD_RE.test(f.name); });
-    if (!files.length) { toast("Choose a .md file", true); return; }
+  function renderImportSummary(p, filled) {
+    $("importResult").innerHTML =
+      '<ul class="imp-list"><li><strong>' + esc(p.title) + "</strong> " +
+      '<span class="name">' + esc(p.filename) + " · " + p.words + " words</span>" +
+      warnsHtml(p.warnings) + "</li></ul>" +
+      '<p class="hint" style="margin-top:.75rem">Filled in: ' + esc(filled.join(", ")) +
+      ". Close this to review it, then save.</p>";
+  }
 
-    var bulk = files.length > 1;
+  async function importFile(file) {
+    if (!file) return;
+    if (!MD_RE.test(file.name)) { toast("That is not a Markdown file", true); return; }
+    if (editorHasContent() &&
+        !confirm("Replace what is in this editor with " + file.name + "?")) return;
+
     var fd = new FormData();
-    files.forEach(function (f) { fd.append("files", f); });
-
-    $("importResult").innerHTML = '<p class="empty">Reading ' + files.length +
-      (bulk ? " files…" : " file…") + "</p>";
+    fd.append("file", file);
+    $("importResult").innerHTML = '<p class="empty">Reading ' + esc(file.name) + "…</p>";
 
     try {
-      var res = await fetch("/api/admin/import" + (bulk ? "?create=1" : ""), {
+      var res = await fetch("/api/admin/import", {
         method: "POST", credentials: "same-origin", body: fd
       });
       if (res.status === 401) { closeImport(); showLogin(); return; }
 
-      var data = null;
-      try { data = await res.json(); } catch (e) { /* empty body */ }
-      if (!res.ok) throw new Error((data && data.error) || ("Import failed (" + res.status + ")"));
+      var p = null;
+      try { p = await res.json(); } catch (e) { /* empty body */ }
+      if (!res.ok) throw new Error((p && p.error) || ("Import failed (" + res.status + ")"));
 
-      if (!data.created) {
-        if (!data.posts || !data.posts.length) throw new Error("Nothing to import");
-        loadIntoEditor(data.posts[0]);
-        toast("Imported — review it, then save");
-        return;
-      }
-
-      var ok = renderImportResults(data.results);
-      await loadAll();
-      toast(ok + " of " + data.results.length + " imported as drafts", ok === 0);
+      renderImportSummary(p, importKind === "post" ? fillPost(p) : fillProject(p));
+      toast("Imported — review it, then save");
     } catch (err) {
       $("importResult").innerHTML = '<p class="empty">' + esc(err.message) + "</p>";
       toast(err.message, true);
     }
   }
 
-  $("importBtn").addEventListener("click", openImport);
+  $("importPostBtn").addEventListener("click", function () { openImport("post"); });
+  $("importProjectBtn").addEventListener("click", function () { openImport("project"); });
   $("importClose").addEventListener("click", closeImport);
   $("importPick").addEventListener("click", function () { hiddenMd.click(); });
   $("importModal").addEventListener("click", function (e) { if (e.target === this) closeImport(); });
 
   hiddenMd.addEventListener("change", function () {
-    // Copy the list before clearing the input: reading .files after the reset
-    // would give an empty list, and the reset is what lets the same file be
-    // chosen twice in a row.
-    var files = Array.prototype.slice.call(this.files || []);
+    // Grab the File before clearing the input — the reset empties .files, and
+    // it is what lets the same file be chosen twice in a row.
+    var file = (this.files || [])[0];
     this.value = "";
-    importFiles(files);
+    importFile(file);
   });
 
   // The whole modal is the drop target, not just the dashed box — and the
@@ -1102,7 +1143,7 @@ textarea.body { min-height: 26rem; }
     });
     modal.addEventListener("drop", function (e) {
       e.preventDefault();
-      importFiles((e.dataTransfer && e.dataTransfer.files) || []);
+      importFile(((e.dataTransfer && e.dataTransfer.files) || [])[0]);
     });
   })();
 

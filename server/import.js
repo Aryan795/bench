@@ -230,6 +230,10 @@ function mdToPost(text, filename) {
 
   return {
     filename: String(filename || "").replace(/^.*[\\/]/, "").slice(0, 200),
+    // The raw front matter, so a caller can read keys this shape does not
+    // carry — the project editor needs headline, domain, year and metric,
+    // and duplicating the whole projects schema here would be worse.
+    fm: data,
     title,
     dek,
     slug: str(data.slug, 100),

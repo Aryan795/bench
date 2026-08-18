@@ -269,11 +269,10 @@ const upload = multer({
    --------------------------------------------------------------- */
 
 const MD_EXT = /\.(md|markdown|mdown|mkd|txt)$/i;
-const MD_MAX_FILES = 20;
 
 const mdUpload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 2 * 1024 * 1024, files: MD_MAX_FILES },
+  limits: { fileSize: 2 * 1024 * 1024, files: 1 },
   fileFilter: (_req, file, cb) => {
     // Filtered on extension, not mimetype: browsers report .md as
     // text/markdown, text/plain or application/octet-stream depending on
@@ -584,70 +583,29 @@ admin.post("/preview", (req, res) => {
 });
 
 /**
- * Import Markdown files as posts.
+ * Parse a Markdown file into editor fields.
  *
- *   POST /api/admin/import            -> parse only, returns the parsed fields
- *   POST /api/admin/import?create=1   -> parse and insert each file as a post
+ *   POST /api/admin/import   multipart, field name "file"
  *
- * The parse-only mode is what a single file uses: the admin panel loads the
- * result into the editor so it can be reviewed and saved through the normal
- * path. create=1 is for bulk, where opening twelve editors is not useful.
- *
- * Either way the fields go through postPayload(), so an import cannot write a
- * document a hand-authored post could not.
+ * Deliberately writes nothing. The admin panel loads the result into whichever
+ * editor is open — post or project — so the author reviews it and saves through
+ * the normal path, where the usual validation and slugging apply. An import
+ * that fails halfway therefore leaves no partial document behind.
  */
 admin.post("/import", (req, res, next) => {
-  mdUpload.array("files", MD_MAX_FILES)(req, res, async (err) => {
+  mdUpload.single("file")(req, res, async (err) => {
     if (err) {
       if (err.code === "LIMIT_FILE_SIZE") return bad(res, "That file is larger than 2 MB");
-      if (err.code === "LIMIT_FILE_COUNT") return bad(res, `At most ${MD_MAX_FILES} files at a time`);
       return bad(res, err.message);
     }
-
-    const files = req.files || [];
-    if (!files.length) return bad(res, "No file received");
+    if (!req.file) return bad(res, "No file received");
 
     try {
-      const parsed = [];
-      for (const f of files) {
-        try {
-          parsed.push(mdToPost(decodeText(f.buffer), f.originalname));
-        } catch (e) {
-          // One unreadable file must not sink the whole batch.
-          parsed.push({ filename: String(f.originalname || "").slice(0, 200), error: e.message });
-        }
-      }
-
-      if (req.query.create !== "1") {
-        const first = parsed[0];
-        if (first.error) return bad(res, first.error);
-        return res.json({ created: false, posts: parsed.filter(p => !p.error), skipped: parsed.filter(p => p.error) });
-      }
-
-      const results = [];
-      for (const p of parsed) {
-        if (p.error) {
-          results.push({ ok: false, filename: p.filename, error: p.error });
-          continue;
-        }
-        try {
-          const doc = await postPayload(p);
-          doc.createdAt = new Date().toISOString();
-          doc.publishedAt = doc.status === "published" ? new Date().toISOString() : null;
-          const r = await state.posts.insertOne(doc);
-          results.push({
-            ok: true, filename: p.filename, id: String(r.insertedId),
-            title: doc.title, slug: doc.slug, status: doc.status, warnings: p.warnings
-          });
-        } catch (e) {
-          results.push({
-            ok: false, filename: p.filename,
-            error: e && e.code === 11000 ? "That slug is already taken" : (e.message || "Import failed")
-          });
-        }
-      }
-      res.status(201).json({ created: true, results });
-    } catch (e) { next(e); }
+      res.json(mdToPost(decodeText(req.file.buffer), req.file.originalname));
+    } catch (e) {
+      if (/not text/.test(e.message)) return bad(res, e.message);
+      next(e);
+    }
   });
 });
 
