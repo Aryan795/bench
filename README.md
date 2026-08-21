@@ -51,7 +51,7 @@ Nothing else. Node and MongoDB run inside the containers; you do not install the
 ## Quick start
 
 ```bash
-git clone https://github.com/YOUR-USERNAME/bench.git
+git clone https://github.com/Aryan795/bench.git
 cd bench
 cp .env.example .env
 ```
@@ -339,7 +339,7 @@ stack up.
 
 ```bash
 apt-get install -y git
-git clone https://github.com/YOUR-USERNAME/bench.git /root/bench
+git clone https://github.com/Aryan795/bench.git /root/bench
 cd /root/bench
 ./deploy/bench-lxc.sh
 ```
@@ -385,7 +385,7 @@ supervises them with systemd. No Docker anywhere.
 
 ```bash
 apt-get install -y git
-git clone https://github.com/YOUR-USERNAME/bench.git /root/bench
+git clone https://github.com/Aryan795/bench.git /root/bench
 cd /root/bench
 ./deploy/bench-lxc-native.sh
 ```
@@ -577,7 +577,7 @@ the remote once:
 ```bash
 pct exec <CTID> -- bash -lc '
   cd /opt/bench && git init -q -b main \
-  && git remote add origin https://github.com/YOUR-USERNAME/bench.git \
+  && git remote add origin https://github.com/Aryan795/bench.git \
   && git fetch -q origin && git reset -q --hard origin/main'
 ```
 
