@@ -178,6 +178,13 @@ h1, h2, h3, h4, h5 { font-family: var(--head); letter-spacing: -.02em; }
 .chip.c-green   { background: var(--green);   color: var(--inverse); }
 .chip.c-orange  { background: var(--orange);  color: var(--dark); }
 
+/* free-form tags — muted so the one colored domain chip stays the anchor */
+.chip--tag { background: var(--muted-bg); color: var(--text-3); font-weight: 600; }
+a.chip--tag { text-decoration: none; transition: background 140ms var(--ease), color 140ms var(--ease); }
+a.chip--tag:hover { background: var(--dark); color: var(--inverse); }
+
+.chip-row { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
+
 .arrow { font-weight: 700; }
 
 /* ---------------- header ---------------- */
@@ -653,6 +660,7 @@ h1, h2, h3, h4, h5 { font-family: var(--head); letter-spacing: -.02em; }
   text-wrap: balance;
 }
 .article-head .meta { font-size: var(--t-md); color: var(--text-2); margin: 0; }
+.article-head .tag-row { justify-content: center; margin-top: 1rem; }
 
 .hero-figure { margin: 2rem 0 0; }
 .hero-figure .card-img {
@@ -1180,42 +1188,50 @@ h1, h2, h3, h4, h5 { font-family: var(--head); letter-spacing: -.02em; }
       headline: "The build cache that had to learn what a step actually touches",
       dek: "An incremental build cache for monorepos that reasons about effects, not just file hashes.",
       metric: "4.2×", metricKey: "Cold-build speedup",
-      spec: [["Language","Rust"],["Tests","1,204"],["Stars","2.1k"]] },
+      spec: [["Language","Rust"],["Tests","1,204"],["Stars","2.1k"]],
+      tags: ["Rust","Build systems","Caching"] },
     { slug: "sidereal", domain: "hw", year: 2025, state: "Active", title: "Sidereal", plate: "sidereal",
       headline: "Closing the loop on a mount that would not stop flexing",
       dek: "A closed-loop equatorial mount for astrophotography, corrected against a live plate-solve.",
       metric: "0.8″", metricKey: "Tracking RMS",
-      spec: [["Process","CNC 6061"],["Mass","3.4 kg"],["Revision","C"]] },
+      spec: [["Process","CNC 6061"],["Mass","3.4 kg"],["Revision","C"]],
+      tags: ["CNC","Control loops","Astronomy"] },
     { slug: "cardinal", domain: "ml", year: 2025, state: "Shipped", title: "Cardinal", plate: "cardinal",
       headline: "Eighty-seven species, four hundred milliwatts, one microcontroller",
       dek: "On-device bird-call classification running inside a 400 mW power budget in the field.",
       metric: "0.91", metricKey: "F1 across 87 species",
-      spec: [["Parameters","1.2 M"],["Training data","94 h"],["Latency","31 ms"]] },
+      spec: [["Parameters","1.2 M"],["Training data","94 h"],["Latency","31 ms"]],
+      tags: ["TinyML","Bioacoustics","Embedded"] },
     { slug: "tracewright", domain: "sw", year: 2025, state: "Shipped", title: "Tracewright", plate: "tracewright",
       headline: "Telling two CI runs apart when both of them passed",
       dek: "A differ for distributed traces: point it at two CI runs and it tells you what actually changed.",
       metric: "1.1 M/s", metricKey: "Spans ingested",
-      spec: [["Language","Go"],["Tests","663"],["Stars","840"]] },
+      spec: [["Language","Go"],["Tests","663"],["Stars","840"]],
+      tags: ["Go","Tracing","CI"] },
     { slug: "loam", domain: "hw", year: 2024, state: "Fielded", title: "Loam", plate: "loam",
       headline: "Seven months on a hillside without a single visit",
       dek: "A solar soil-moisture mesh that has been reporting from a hillside for seven months unattended.",
       metric: "214 d", metricKey: "Unattended uptime",
-      spec: [["Process","PCB rev D"],["Mass","96 g"],["Radio","LoRa 868"]] },
+      spec: [["Process","PCB rev D"],["Mass","96 g"],["Radio","LoRa 868"]],
+      tags: ["LoRa","Solar","PCB"] },
     { slug: "understory", domain: "ml", year: 2024, state: "Paper", title: "Understory", plate: "understory",
       headline: "Measuring canopy height from orbit, then checking it with a plane",
       dek: "Canopy-height regression from Sentinel-2, validated against airborne LiDAR across three biomes.",
       metric: "2.4 m", metricKey: "RMSE against LiDAR",
-      spec: [["Parameters","18 M"],["Dataset","41 GB"],["R²","0.87"]] },
+      spec: [["Parameters","18 M"],["Dataset","41 GB"],["R²","0.87"]],
+      tags: ["Remote sensing","PyTorch","LiDAR"] },
     { slug: "hookshot", domain: "hw", year: 2023, state: "Archived", title: "Hookshot", plate: "hookshot",
       headline: "Every motor in the base and nothing heavy past the shoulder",
       dek: "A cable-driven four-DOF arm with all its motors in the base and nothing heavy past the shoulder.",
       metric: "1.4 kg", metricKey: "Payload at full reach",
-      spec: [["Process","3D print"],["Mass","1.1 kg"],["Revision","B"]] },
+      spec: [["Process","3D print"],["Mass","1.1 kg"],["Revision","B"]],
+      tags: ["3D printing","Kinematics","Servos"] },
     { slug: "marginalia", domain: "sw", year: 2023, state: "Shipped", title: "Marginalia", plate: "marginalia",
       headline: "Annotating PDFs without shipping a PDF engine",
       dek: "An annotation layer for PDFs that renders in the browser without shipping a PDF engine.",
       metric: "38 kB", metricKey: "Gzipped bundle",
-      spec: [["Language","TypeScript"],["Tests","417"],["Stars","1.3k"]] }
+      spec: [["Language","TypeScript"],["Tests","417"],["Stars","1.3k"]],
+      tags: ["TypeScript","PDF","Browser"] }
   ];
 
   var SEED_POSTS = [
@@ -1273,7 +1289,8 @@ h1, h2, h3, h4, h5 { font-family: var(--head); letter-spacing: -.02em; }
         return {
           slug: p.slug, title: p.title, headline: p.headline || p.title, dek: p.dek,
           domain: p.domain, year: p.year, state: p.state, metric: p.metric,
-          metricKey: p.metricKey, spec: p.spec || [], plate: p.plate || p.slug,
+          metricKey: p.metricKey, spec: p.spec || [], tags: p.tags || [],
+          plate: p.plate || p.slug,
           cover: p.cover || null, bodyHtml: p.bodyHtml || ""
         };
       });
@@ -1623,12 +1640,17 @@ h1, h2, h3, h4, h5 { font-family: var(--head); letter-spacing: -.02em; }
   }
 
   function projectCard(p) {
-    /* Name leads, big and bold; the editorial hook sits under it, smaller. */
+    /* Name leads, big and bold; the editorial hook sits under it, smaller.
+       The colored domain chip anchors the row; two muted tags ride along —
+       the full set lives on the detail page. */
     var hook = (p.headline && p.headline !== p.title) ? p.headline : "";
+    var chips = chipFor(p.domain) + (p.tags || []).slice(0, 2).map(function (t) {
+      return '<span class="chip chip--tag">' + esc(t) + '</span>';
+    }).join("");
     return '<a class="card" href="#/project/' + p.slug + '" data-nav>' +
       '<div class="card-img">' + imageFor(p.cover, p.plate || p.slug) + '</div>' +
       '<div class="card-body">' +
-        chipFor(p.domain) +
+        '<div class="chip-row">' + chips + '</div>' +
         '<h3>' + esc(p.title) + '</h3>' +
         (hook ? '<p class="dek">' + esc(hook) + '</p>' : '') +
         (p.metric ? '<p class="card-meta">' + esc(p.metric) + " " + esc(String(p.metricKey || "").toLowerCase()) + '</p>' : '') +
@@ -1786,7 +1808,8 @@ h1, h2, h3, h4, h5 { font-family: var(--head); letter-spacing: -.02em; }
     var needle = q.toLowerCase();
     var hits = [];
     PROJECTS.forEach(function (p) {
-      var hay = [p.title, p.headline, p.dek, DOMAIN[p.domain], p.metricKey].join(" ").toLowerCase();
+      var hay = [p.title, p.headline, p.dek, DOMAIN[p.domain], p.metricKey]
+        .concat(p.tags || []).join(" ").toLowerCase();
       if (hay.indexOf(needle) > -1) { hits.push(projectCard(p)); }
     });
     POSTS.forEach(function (a) {
@@ -1834,6 +1857,10 @@ h1, h2, h3, h4, h5 { font-family: var(--head); letter-spacing: -.02em; }
           ? '<p class="head-sub">' + esc(p.headline) + '</p>' : '') +
         '<p class="meta">' + p.year + ' · ' + esc(p.state || "") +
           (p.metric ? ' · ' + esc(p.metric) + " " + esc(String(p.metricKey || "").toLowerCase()) : '') + '</p>' +
+        ((p.tags || []).length ?
+          '<div class="chip-row tag-row">' + p.tags.map(function (t) {
+            return '<a class="chip chip--tag" href="#/search/' + encodeURIComponent(t) + '" data-nav>' + esc(t) + '</a>';
+          }).join("") + '</div>' : '') +
       '</div>' +
       '<figure class="hero-figure"><div class="card-img">' + imageFor(p.cover, p.plate || p.slug) + '</div>' +
         '<figcaption>' + esc(p.dek || "") + '</figcaption></figure>' +

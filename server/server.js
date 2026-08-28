@@ -225,6 +225,7 @@ function publicProject(doc) {
     metric: p.metric,
     metricKey: p.metricKey,
     spec: Array.isArray(p.spec) ? p.spec : [],
+    tags: Array.isArray(p.tags) ? p.tags : [],
     plate: p.plate || null,
     cover: p.cover || null,
     status: p.status,
@@ -508,6 +509,13 @@ async function projectPayload(body, ignoreId) {
   const year = Number(body.year);
   const bodyMd = String(body.bodyMd || "");
 
+  // Free-form labels alongside the single domain — capped so a card row and
+  // the detail page stay legible rather than turning into a tag cloud.
+  let tags = [];
+  if (Array.isArray(body.tags)) {
+    tags = body.tags.map(t => str(t, 24)).filter(Boolean).slice(0, 8);
+  }
+
   let spec = [];
   if (Array.isArray(body.spec)) {
     spec = body.spec
@@ -528,6 +536,7 @@ async function projectPayload(body, ignoreId) {
     metric: str(body.metric, 40),
     metricKey: str(body.metricKey, 80),
     spec,
+    tags,
     plate: str(body.plate, 60) || null,
     cover: coverPath(body.cover),
     status: STATUSES.has(body.status) ? body.status : "published",

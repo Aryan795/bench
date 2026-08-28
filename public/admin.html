@@ -427,6 +427,11 @@ textarea.body { min-height: 26rem; }
               <select id="j-plate"></select>
               <span class="hint">The line drawing used as the card image.</span>
             </div>
+            <div class="field">
+              <label for="j-tags">Tags</label>
+              <input id="j-tags" placeholder="IoT, ESPHome, 3D printing">
+              <span class="hint">Comma-separated, up to 8. Shown as chips on the card and page.</span>
+            </div>
           </div>
 
           <div class="side" style="margin-top:1.5rem">
@@ -1004,7 +1009,7 @@ textarea.body { min-height: 26rem; }
   // can never drift out of step with what the fill below actually reads.
   var IMPORT_KEYS = {
     post: "category, project, cover",
-    project: "headline, domain, year, state, metric, metricKey, plate"
+    project: "headline, domain, year, state, metric, metricKey, plate, tags"
   };
 
   function warnsHtml(ws) {
@@ -1071,6 +1076,8 @@ textarea.body { min-height: 26rem; }
     setIf("j-metric", p.fm.metric, "metric", filled);
     setIf("j-metricKey", p.fm.metrickey || p.fm.metric_key, "metric label", filled);
     setIf("j-plate", p.fm.plate, "plate", filled);
+    // Front matter is scalar-only, so tags arrive comma-separated.
+    setIf("j-tags", p.fm.tags, "tags", filled);
     // Projects are illustrated by a plate, not a cover, so there is nowhere
     // for a cover to go — say so rather than dropping it in silence.
     if (p.cover) {
@@ -1225,6 +1232,7 @@ textarea.body { min-height: 26rem; }
     $("j-metric").value = j ? j.metric : "";
     $("j-metricKey").value = j ? j.metricKey : "";
     $("j-plate").value = j && j.plate ? j.plate : "";
+    $("j-tags").value = j && j.tags ? j.tags.join(", ") : "";
     $("j-status").value = j ? j.status : "published";
 
     var list = $("specList");
@@ -1251,7 +1259,8 @@ textarea.body { min-height: 26rem; }
       bodyMd: $("j-body").value, slug: $("j-slug").value, domain: $("j-domain").value,
       year: $("j-year").value, state: $("j-state").value, metric: $("j-metric").value,
       metricKey: $("j-metricKey").value, plate: $("j-plate").value,
-      status: $("j-status").value, spec: spec
+      status: $("j-status").value, spec: spec,
+      tags: $("j-tags").value.split(",").map(function (t) { return t.trim(); }).filter(Boolean)
     };
     try {
       if (state.editingProject) await api("/api/admin/projects/" + state.editingProject, { method: "PUT", body: body });
