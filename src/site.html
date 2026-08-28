@@ -178,10 +178,11 @@ h1, h2, h3, h4, h5 { font-family: var(--head); letter-spacing: -.02em; }
 .chip.c-green   { background: var(--green);   color: var(--inverse); }
 .chip.c-orange  { background: var(--orange);  color: var(--dark); }
 
-/* free-form tags — muted so the one colored domain chip stays the anchor */
-.chip--tag { background: var(--muted-bg); color: var(--text-3); font-weight: 600; }
-a.chip--tag { text-decoration: none; transition: background 140ms var(--ease), color 140ms var(--ease); }
-a.chip--tag:hover { background: var(--dark); color: var(--inverse); }
+/* free-form tags — every tag carries an accent, hashed from its text so
+   the same tag is the same colour on every card and page */
+.chip--tag { font-weight: 600; }
+a.chip--tag { text-decoration: none; transition: filter 140ms var(--ease), transform 140ms var(--ease); }
+a.chip--tag:hover { filter: brightness(1.08); transform: translateY(-1px); }
 
 .chip-row { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
 
@@ -354,34 +355,6 @@ a.chip--tag:hover { background: var(--dark); color: var(--inverse); }
 .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--gap); }
 @media (max-width: 900px) { .grid-3 { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 600px) { .grid-3, .grid-2 { grid-template-columns: 1fr; } }
-
-/* ---------------- home: banner ---------------- */
-
-.banner {
-  display: flex;
-  align-items: center;
-  gap: .9rem;
-  border: 1px solid var(--border);
-  border-radius: var(--r-lg);
-  background: var(--page);
-  padding: .8rem 1.1rem;
-  text-decoration: none;
-  color: inherit;
-  transition: border-color 150ms var(--ease);
-}
-.banner:hover { border-color: var(--text); }
-.banner-ico {
-  flex: 0 0 auto;
-  width: 40px; height: 40px;
-  border-radius: var(--r-sm);
-  display: grid;
-  place-items: center;
-  background: var(--green);
-  color: var(--inverse);
-}
-.banner b { font-size: var(--t-md); font-weight: 700; display: block; }
-.banner span { font-size: var(--t-sm); color: var(--text-2); display: block; }
-.banner .arrow { margin-left: auto; color: var(--text-mute); }
 
 /* ---------------- home: hero ---------------- */
 
@@ -832,10 +805,6 @@ a.chip--tag:hover { background: var(--dark); color: var(--inverse); }
 
 <!-- ==================== HOME ==================== -->
 <main id="view-home" class="view is-on">
-
-  <section class="band">
-    <div class="wrap" id="bannerHost"></div>
-  </section>
 
   <section class="band">
     <div class="wrap">
@@ -1629,6 +1598,21 @@ a.chip--tag:hover { background: var(--dark); color: var(--inverse); }
     return '<span class="chip ' + (DCOLOR[domain] || "c-orange") + '">' + esc(label || DOMAIN[domain] || "Project") + '</span>';
   }
 
+  /* Deterministic accent per tag text — the same tag reads the same colour
+     wherever it appears. */
+  function tagClass(t) {
+    var h = 0, i;
+    for (i = 0; i < t.length; i++) { h = (h * 31 + t.charCodeAt(i)) >>> 0; }
+    return ["c-cyan", "c-magenta", "c-green", "c-orange"][h % 4];
+  }
+
+  function tagChip(t, link) {
+    var cls = 'chip chip--tag ' + tagClass(t);
+    return link
+      ? '<a class="' + cls + '" href="#/search/' + encodeURIComponent(t) + '" data-nav>' + esc(t) + '</a>'
+      : '<span class="' + cls + '">' + esc(t) + '</span>';
+  }
+
   /* ---------------- cards ---------------- */
 
   /* An uploaded cover wins; otherwise the project's line plate fills the image
@@ -1641,11 +1625,11 @@ a.chip--tag:hover { background: var(--dark); color: var(--inverse); }
 
   function projectCard(p) {
     /* Name leads, big and bold; the editorial hook sits under it, smaller.
-       The colored domain chip anchors the row; two muted tags ride along —
-       the full set lives on the detail page. */
+       The domain chip leads the row; two tags ride along — the full set
+       lives on the detail page. */
     var hook = (p.headline && p.headline !== p.title) ? p.headline : "";
     var chips = chipFor(p.domain) + (p.tags || []).slice(0, 2).map(function (t) {
-      return '<span class="chip chip--tag">' + esc(t) + '</span>';
+      return tagChip(t);
     }).join("");
     return '<a class="card" href="#/project/' + p.slug + '" data-nav>' +
       '<div class="card-img">' + imageFor(p.cover, p.plate || p.slug) + '</div>' +
@@ -1679,15 +1663,6 @@ a.chip--tag:hover { background: var(--dark); color: var(--inverse); }
 
   function renderHome() {
     var byYear = PROJECTS.slice().sort(function (x, y) { return y.year - x.year; });
-
-    /* banner — the newest post gets the announcement slot */
-    document.getElementById("bannerHost").innerHTML = POSTS.length
-      ? '<a class="banner" href="#/article/' + POSTS[0].slug + '" data-nav>' +
-          '<span class="banner-ico">' + ICO.doc + '</span>' +
-          '<span><b>New on the blog</b><span>' + esc(POSTS[0].title) +
-            (POSTS[0].date ? ' — ' + esc(POSTS[0].date) : '') + '</span></span>' +
-          '<span class="arrow">→</span></a>'
-      : "";
 
     document.getElementById("statProjects").textContent = PROJECTS.length;
 
@@ -1859,7 +1834,7 @@ a.chip--tag:hover { background: var(--dark); color: var(--inverse); }
           (p.metric ? ' · ' + esc(p.metric) + " " + esc(String(p.metricKey || "").toLowerCase()) : '') + '</p>' +
         ((p.tags || []).length ?
           '<div class="chip-row tag-row">' + p.tags.map(function (t) {
-            return '<a class="chip chip--tag" href="#/search/' + encodeURIComponent(t) + '" data-nav>' + esc(t) + '</a>';
+            return tagChip(t, true);
           }).join("") + '</div>' : '') +
       '</div>' +
       '<figure class="hero-figure"><div class="card-img">' + imageFor(p.cover, p.plate || p.slug) + '</div>' +
