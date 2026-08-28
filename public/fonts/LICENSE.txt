@@ -1,0 +1,12 @@
+The font files in this directory are redistributed under the
+SIL Open Font License, Version 1.1 (https://openfontlicense.org).
+
+inter-latin.woff2
+  Inter — Copyright 2016 The Inter Project Authors
+  https://github.com/rsms/inter
+
+plus-jakarta-sans-latin.woff2
+  Plus Jakarta Sans — Copyright 2020 The Plus Jakarta Sans Project Authors
+  https://github.com/tokotype/PlusJakartaSans
+
+Both are latin-subset variable-weight builds served by Google Fonts.

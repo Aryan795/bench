@@ -7,7 +7,8 @@ Built for people who make things in more than one discipline — software, hardw
 research — and want them to sit in a single coherent index rather than three
 disconnected pages.
 
-- **Editorial layout.** A black-and-white magazine grid, not a card template.
+- **Bento layout.** A light card grid set in Inter and Plus Jakarta Sans (self-hosted,
+  CSP-safe), with four accent colours mapped to project domains.
 - **Markdown editor** with a toolbar, live split preview, drag-and-drop and
   paste-to-upload images, and an image library.
 - **No photography required.** Projects without a cover fall back to hand-drawn SVG

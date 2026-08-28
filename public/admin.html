@@ -401,6 +401,9 @@ textarea.body { min-height: 26rem; }
                 <option value="sw">Software</option>
                 <option value="hw">Hardware</option>
                 <option value="ml">Machine Learning</option>
+                <option value="sh">Smart Home</option>
+                <option value="net">Networking</option>
+                <option value="3d">3D Printing</option>
               </select>
             </div>
             <div class="field">
@@ -1176,7 +1179,8 @@ textarea.body { min-height: 26rem; }
 
   function renderProjects() {
     var tb = $("projectRows");
-    var LABEL = { sw: "Software", hw: "Hardware", ml: "Machine Learning" };
+    var LABEL = { sw: "Software", hw: "Hardware", ml: "Machine Learning",
+                  sh: "Smart Home", net: "Networking", "3d": "3D Printing" };
     if (!state.projects.length) {
       tb.innerHTML = '<tr><td colspan="6" class="empty">No projects yet.</td></tr>';
       return;

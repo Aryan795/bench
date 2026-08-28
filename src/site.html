@@ -2,504 +2,781 @@
 
 <style>
 /* ============================================================
-   EDITORIAL — black-and-white magazine.
-   One typeface family, two blocks (white ground / black block),
-   one heavy rule. No colour anywhere: hierarchy is scale,
-   italic, and rule weight.
+   NOVA — light bento portfolio.
+   Two sans families (Inter for display and body, Plus Jakarta
+   Sans for headings), four accent colours used systematically:
+   cyan = software, magenta = hardware, green = machine learning,
+   orange = writing. Cards are rounded, bordered, on a white page.
+   Token values follow the Nova Studio reference sheet v1.0.0.
    ============================================================ */
 
-:root {
-  --bg:       #FFFFFF;
-  --ink:      #000000;   /* headlines, rules, the block                  */
-  --text:     #16161A;   /* running prose — softened off true black      */
-  --muted:    #6E6E73;   /* bylines, captions                            */
-  --hairline: #D8D8D8;
-  --plate-bg: #F2F2F2;   /* the image slot ground                        */
-  --block-bg: #000000;
-  --block-fg: #FFFFFF;
-  --block-muted: #B4B4B8;
-  --block-line:  #3A3A3A;
+/* Self-hosted variable fonts — the CSP is default-src 'self', so a font CDN
+   would be blocked. When this file is published standalone (artifact host),
+   /fonts does not resolve and the stacks below fall back to system fonts. */
+@font-face {
+  font-family: "Inter";
+  src: url("/fonts/inter-latin.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  src: url("/fonts/plus-jakarta-sans-latin.woff2") format("woff2");
+  font-weight: 200 800;
+  font-style: normal;
+  font-display: swap;
+}
 
-  /* High-contrast display serif for the big statements, a sturdier
-     old-style for anything you actually read. All system-resident —
-     the CSP blocks font CDNs, so a linked webfont would fall back
-     silently and lose the whole character of the page. */
-  /* Sturdy transitional, NOT a Didone. Didot's hairlines go spindly at display
-     size and read fashion-magazine; the reference has bracketed serifs and only
-     moderate stroke contrast. */
-  --display: "Playfair Display", "Hoefler Text", Baskerville, "Times New Roman", Georgia, serif;
-  --serif: "Iowan Old Style", Charter, "Sitka Text", "Palatino Linotype", Palatino, Georgia, serif;
+:root {
+  /* backgrounds */
+  --page:      #FFFFFF;
+  --surface:   #F9FAFB;
+  --muted-bg:  #F3F4F6;
+  --dark:      #0E0F16;
+
+  /* text */
+  --text:      #111827;
+  --text-2:    #6B7280;
+  --text-3:    #374151;
+  --text-mute: #9CA3AF;
+  --inverse:   #FFFFFF;
+
+  /* accents */
+  --cyan:      #07CAD5;
+  --magenta:   #EC46AA;
+  --green:     #10B76F;
+  --orange:    #F5870A;
+
+  /* borders */
+  --border:      #E5E7EB;
+  --border-dark: #525884;
+
+  --sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --head: "Plus Jakarta Sans", "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
   --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
 
-  --t-11: clamp(.6875rem,  .668rem  + .082vw,  .75rem);
-  --t-13: clamp(.8125rem,  .793rem  + .082vw,  .875rem);
-  --t-15: clamp(.9375rem,  .918rem  + .082vw,  1rem);
-  --t-17: clamp(1.0625rem, 1.043rem + .082vw,  1.125rem);
-  --t-19: clamp(1.1875rem, 1.149rem + .164vw,  1.3125rem);
-  --t-23: clamp(1.375rem,  1.31rem  + .27vw,   1.5625rem);
-  --t-28: clamp(1.625rem,  1.5rem   + .53vw,   2rem);
-  --t-40: clamp(2rem,      1.75rem  + 1.05vw,  2.75rem);
-  --t-64: clamp(2.5rem,    1.6rem   + 3.8vw,   5.25rem);
+  /* type scale — display 72 / h1 44 / h2 36 / h3 32 / h4 24 / h5 20,
+     body 16 / 14, caption 12; the clamps come down gently on phones */
+  --t-display: clamp(2.375rem, 1.45rem + 3.9vw, 4.5rem);
+  --t-h1: clamp(2rem,    1.63rem + 1.6vw,  2.75rem);
+  --t-h2: clamp(1.7rem,  1.45rem + 1.1vw,  2.25rem);
+  --t-h3: clamp(1.5rem,  1.32rem + .8vw,   2rem);
+  --t-h4: 1.5rem;
+  --t-h5: 1.25rem;
+  --t-lg: 1rem;
+  --t-md: .875rem;
+  --t-sm: .75rem;
 
-  --lead: calc(var(--t-19) * 1.62);
-  --page: 76rem;
-  --measure: 38rem;
-  --pad: clamp(1.25rem, 4vw, 3.25rem);
+  --r-xl: 28px;
+  --r-lg: 20px;
+  --r-md: 14px;
+  --r-sm: 10px;
+
+  --page-w: 72rem;
+  --measure: 42rem;
+  --pad: clamp(1rem, 3.5vw, 2.5rem);
+  --gap: clamp(.875rem, 1.8vw, 1.5rem);
   --ease: cubic-bezier(.22, 1, .36, 1);
 }
 
-/* Locked to the light "Tenku" look — no OS-dark auto-switch, no runtime
-   toggle. The full light palette lives on :root above and nothing overrides
-   it, so the site renders identically on light- and dark-mode devices. */
 :root { color-scheme: light; }
 
 * { box-sizing: border-box; }
 
 body {
   margin: 0;
-  background: var(--bg);
+  background: var(--page);
   color: var(--text);
-  font-family: var(--serif);
-  font-size: var(--t-19);
-  line-height: 1.62;
+  font-family: var(--sans);
+  font-size: var(--t-lg);
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
 }
 
 a { color: inherit; }
 
 a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
-  outline: 2px solid var(--ink);
+  outline: 2px solid var(--cyan);
   outline-offset: 3px;
+  border-radius: 4px;
 }
 
-.wrap { max-width: var(--page); margin-inline: auto; padding-inline: var(--pad); }
+.wrap { max-width: var(--page-w); margin-inline: auto; padding-inline: var(--pad); }
 
-/* ---------------- masthead block ---------------- */
+/* ---------------- shared atoms ---------------- */
 
-.masthead { background: var(--block-bg); color: var(--block-fg); }
+h1, h2, h3, h4, h5 { font-family: var(--head); letter-spacing: -.02em; }
 
-/* Two stacked rows: utilities pinned at the top of the block, the wordmark
-   centred in the space below. NOT one baseline-aligned row — that is what
-   made the block read as a toolbar instead of a masthead. */
-.mast-top { padding-block: 1.5rem 3.25rem; }
-
-.mast-util {
+.kicker {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
+  gap: .5rem;
+  font-size: var(--t-sm);
+  font-weight: 600;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  margin: 0 0 .6rem;
+}
+.kicker::before {
+  content: "";
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--cyan);
+  flex: 0 0 auto;
+}
+.kicker.k-magenta::before { background: var(--magenta); }
+.kicker.k-green::before   { background: var(--green); }
+.kicker.k-orange::before  { background: var(--orange); }
+
+/* pills — the only button shape on the site */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--page);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: var(--t-md);
+  font-weight: 600;
+  line-height: 1;
+  padding: .6rem 1.15rem;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 150ms var(--ease), color 150ms var(--ease),
+              border-color 150ms var(--ease), transform 150ms var(--ease);
+}
+.pill:hover { border-color: var(--text); }
+.pill:active { transform: scale(.97); }
+
+.pill--dark    { background: var(--dark);    color: var(--inverse); border-color: var(--dark); }
+.pill--dark:hover { background: #1d1f2b; border-color: #1d1f2b; }
+.pill--cyan    { background: var(--cyan);    color: var(--dark);    border-color: var(--cyan); }
+.pill--magenta { background: var(--magenta); color: var(--inverse); border-color: var(--magenta); }
+.pill--green   { background: var(--green);   color: var(--inverse); border-color: var(--green); }
+.pill--orange  { background: var(--orange);  color: var(--dark);    border-color: var(--orange); }
+.pill--cyan:hover, .pill--magenta:hover, .pill--green:hover, .pill--orange:hover,
+.pill--dark:hover { filter: brightness(1.06); border-color: transparent; }
+
+/* small category chips on cards */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  font-size: var(--t-sm);
+  font-weight: 700;
+  line-height: 1;
+  padding: .32rem .7rem;
+  color: var(--dark);
+  background: var(--muted-bg);
+}
+.chip.c-cyan    { background: var(--cyan);    color: var(--dark); }
+.chip.c-magenta { background: var(--magenta); color: var(--inverse); }
+.chip.c-green   { background: var(--green);   color: var(--inverse); }
+.chip.c-orange  { background: var(--orange);  color: var(--dark); }
+
+.arrow { font-weight: 700; }
+
+/* ---------------- header ---------------- */
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: rgba(255, 255, 255, .88);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border);
+}
+.topbar-in {
+  display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  min-height: 3.25rem;
+  padding-block: .8rem;
 }
-
-.social { display: flex; align-items: center; gap: 1.375rem; padding-top: .625rem; }
-.social a { color: var(--block-fg); display: block; transition: opacity 160ms var(--ease); }
-.social a:hover { opacity: .58; }
-.social svg { display: block; }
-
 .wordmark {
-  display: block;
-  text-align: center;
-  font-family: var(--display);
-  font-size: clamp(2.5rem, 6.5vw, 5rem);
-  line-height: 1.05;
-  letter-spacing: .05em;
-  text-transform: uppercase;
+  font-family: var(--head);
+  font-weight: 800;
+  font-size: 1.35rem;
+  letter-spacing: -.02em;
   text-decoration: none;
-  font-weight: 400;
-  margin-top: 1.75rem;
+  color: var(--text);
+  white-space: nowrap;
 }
+.wordmark i { font-style: normal; color: var(--cyan); }
+
+.topnav { display: flex; align-items: center; gap: .45rem; flex-wrap: wrap; justify-content: flex-end; }
+.topnav a {
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: .5rem 1rem;
+  font-size: var(--t-md);
+  font-weight: 600;
+  text-decoration: none;
+  color: var(--text-3);
+  transition: background 150ms var(--ease), color 150ms var(--ease), border-color 150ms var(--ease);
+}
+.topnav a:hover { border-color: var(--border); color: var(--text); }
+.topnav a[aria-current="page"] { background: var(--dark); color: var(--inverse); }
 
 .mast-search {
   display: flex;
-  width: min(21rem, 42vw);
-  background: var(--bg);
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  padding-left: .9rem;
+  width: 11.5rem;
+  transition: border-color 150ms var(--ease);
 }
+.mast-search:focus-within { border-color: var(--cyan); background: var(--page); }
 .mast-search input {
   flex: 1;
   min-width: 0;
-  font-family: var(--serif);
-  font-size: var(--t-17);
-  color: var(--ink);
+  font-family: var(--sans);
+  font-size: var(--t-md);
+  color: var(--text);
   background: transparent;
   border: 0;
-  border-radius: 0;
-  padding: .8rem 1rem;
+  padding: .5rem 0;
 }
-.mast-search input::placeholder { color: var(--muted); opacity: 1; }
+.mast-search input:focus { outline: none; }
+.mast-search input::placeholder { color: var(--text-mute); opacity: 1; }
 .mast-search button {
   flex: 0 0 auto;
-  width: 3.1rem;
-  background: var(--block-bg);
-  color: var(--block-fg);
+  background: none;
   border: 0;
-  border-radius: 0;
+  color: var(--text-2);
+  padding: .5rem .8rem .5rem .4rem;
   cursor: pointer;
   display: grid;
   place-items: center;
 }
-.mast-search button:hover { opacity: .82; }
+.mast-search button:hover { color: var(--text); }
 
-.mast-nav { border-top: 1px solid var(--block-line); }
-.mast-nav ul {
-  list-style: none;
-  margin: 0;
-  padding: 1.4rem 0;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: .6rem 2.75rem;
-  position: relative;
+@media (max-width: 820px) {
+  .mast-search { display: none; }
 }
-.mast-nav a {
-  font-family: var(--serif);
-  font-style: italic;
-  font-size: var(--t-17);
-  text-decoration: none;
-  padding-bottom: 2px;
-  border-bottom: 1px solid transparent;
-  transition: border-color 160ms var(--ease);
-}
-.mast-nav a:hover { border-bottom-color: var(--block-fg); }
-.mast-nav a[aria-current="page"] { border-bottom-color: var(--block-fg); }
-
-@media (max-width: 560px) {
-  .mast-top { padding-block: 1.25rem 2.25rem; }
-  .mast-util { min-height: 0; }
-  .social { gap: 1.125rem; }
-  .mast-search { width: 10.5rem; }
-  .mast-search input { padding: .55rem .7rem; font-size: var(--t-15); }
-  .mast-search button { width: 2.4rem; }
-  .wordmark { margin-top: 1.5rem; }
+@media (max-width: 620px) {
+  .topnav a { padding: .42rem .7rem; }
 }
 
-/* ---------------- section heads ---------------- */
+/* ---------------- cards ---------------- */
 
-.band { padding-block: 3.5rem; }
-.band + .band { padding-top: 0; }
+.panel {
+  background: var(--page);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+}
+.panel--surface { background: var(--surface); }
+
+.band { padding-block: clamp(1.25rem, 3vw, 2rem) 0; }
+.band:last-of-type { padding-bottom: 2rem; }
 
 .sec-head {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
   gap: 1rem;
-  border-bottom: 2px solid var(--ink);
-  padding-bottom: .45rem;
-  margin-bottom: 2.25rem;
+  margin-bottom: 1.5rem;
 }
-.sec-head h2 {
-  font-family: var(--serif);
-  font-size: var(--t-23);
-  font-weight: 400;
-  letter-spacing: .09em;
-  text-transform: uppercase;
-  margin: 0;
-  color: var(--ink);
-}
-.sec-head a {
-  font-style: italic;
-  font-size: var(--t-15);
-  color: var(--muted);
+.sec-head h2 { font-size: var(--t-h2); font-weight: 700; margin: 0; }
+.sec-head .kicker { margin-bottom: .35rem; }
+
+.card {
+  display: flex;
+  flex-direction: column;
+  background: var(--page);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  overflow: hidden;
   text-decoration: none;
-  white-space: nowrap;
+  color: inherit;
+  transition: transform 180ms var(--ease), box-shadow 180ms var(--ease), border-color 180ms var(--ease);
 }
-.sec-head a:hover { color: var(--ink); }
-
-/* ---------------- cards ---------------- */
-
-.card { display: block; text-decoration: none; color: inherit; }
+.card:hover {
+  transform: translateY(-3px);
+  border-color: #d4d7dd;
+  box-shadow: 0 12px 32px rgba(17, 24, 39, .07);
+}
 
 .card-img {
-  background: var(--plate-bg);
-  aspect-ratio: 3 / 2;
+  background: var(--muted-bg);
+  aspect-ratio: 16 / 10;
   overflow: hidden;
-  margin-bottom: .875rem;
   position: relative;
 }
-.card-img svg { display: block; width: 100%; height: 100%; color: var(--ink); }
-.card:hover .card-img { opacity: .82; }
-.card-img { transition: opacity 200ms var(--ease); }
+.card-img svg { display: block; width: 100%; height: 100%; color: var(--text-3); }
+.card-img img { display: block; width: 100%; height: 100%; object-fit: cover; }
 
-.eyebrow {
-  font-style: italic;
-  font-size: var(--t-15);
-  color: var(--text);
-  margin: 0 0 .35rem;
-}
+.card-body { display: flex; flex-direction: column; gap: .55rem; padding: 1.1rem 1.2rem 1.25rem; flex: 1; }
+.card-body .chip { align-self: flex-start; }
 .card h3 {
-  font-family: var(--serif);
-  font-weight: 400;
-  font-size: var(--t-23);
-  line-height: 1.24;
-  margin: 0 0 .5rem;
-  color: var(--ink);
+  font-size: var(--t-h5);
+  font-weight: 700;
+  line-height: 1.3;
+  margin: 0;
   text-wrap: balance;
 }
-.card:hover h3 { text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
-.byline { font-size: var(--t-15); color: var(--muted); margin: 0; }
-.card p.dek { font-size: var(--t-17); line-height: 1.55; margin: 0 0 .75rem; color: var(--text); }
-
-/* LATEST: one hero beside a 2×2 of secondaries */
-.latest {
-  display: grid;
-  grid-template-columns: 1.55fr 1fr 1fr;
-  gap: 2.5rem 2rem;
+.card .dek {
+  font-size: var(--t-md);
+  line-height: 1.55;
+  color: var(--text-2);
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
-.latest .lead-card { grid-row: span 2; }
-.latest .lead-card h3 { font-size: var(--t-40); line-height: 1.14; }
-.latest .lead-card .card-img { aspect-ratio: 4 / 3; }
-
-@media (max-width: 900px) {
-  .latest { grid-template-columns: 1fr 1fr; }
-  .latest .lead-card { grid-row: auto; grid-column: 1 / -1; }
+.card-meta { font-size: var(--t-sm); color: var(--text-mute); margin: 0; }
+.card-link {
+  margin-top: auto;
+  padding-top: .35rem;
+  font-size: var(--t-md);
+  font-weight: 700;
+  color: var(--text);
 }
-@media (max-width: 560px) {
-  .latest { grid-template-columns: 1fr; gap: 2.25rem; }
-}
+.card-link .arrow { color: var(--cyan); }
+.card:hover .card-link { text-decoration: underline; text-underline-offset: 3px; }
 
-/* even grids */
-.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2.25rem 2rem; }
-.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2.75rem 2rem; }
-@media (max-width: 1000px) { .grid-4 { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 860px)  { .grid-3 { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 560px)  { .grid-4, .grid-3 { grid-template-columns: 1fr; } }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--gap); }
+.grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--gap); }
+@media (max-width: 900px) { .grid-3 { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 600px) { .grid-3, .grid-2 { grid-template-columns: 1fr; } }
 
-/* ---------------- filter row ---------------- */
+/* ---------------- home: banner ---------------- */
 
-.filters {
+.banner {
   display: flex;
-  flex-wrap: wrap;
-  gap: .5rem 2rem;
-  align-items: baseline;
-  border-bottom: 1px solid var(--hairline);
-  padding-bottom: .9rem;
-  margin-bottom: 2.25rem;
+  align-items: center;
+  gap: .9rem;
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--page);
+  padding: .8rem 1.1rem;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 150ms var(--ease);
 }
-.filters button {
-  background: none;
-  border: 0;
-  border-bottom: 1px solid transparent;
-  padding: 0 0 2px;
-  font-family: var(--serif);
-  font-style: italic;
-  font-size: var(--t-17);
-  color: var(--muted);
+.banner:hover { border-color: var(--text); }
+.banner-ico {
+  flex: 0 0 auto;
+  width: 40px; height: 40px;
+  border-radius: var(--r-sm);
+  display: grid;
+  place-items: center;
+  background: var(--green);
+  color: var(--inverse);
+}
+.banner b { font-size: var(--t-md); font-weight: 700; display: block; }
+.banner span { font-size: var(--t-sm); color: var(--text-2); display: block; }
+.banner .arrow { margin-left: auto; color: var(--text-mute); }
+
+/* ---------------- home: hero ---------------- */
+
+.hero {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: clamp(1.5rem, 3vw, 3rem);
+  align-items: center;
+  padding: clamp(1.5rem, 4vw, 3rem);
+}
+.hero .kicker { letter-spacing: .1em; }
+.hero h1 {
+  font-family: var(--sans);
+  font-weight: 800;
+  font-size: var(--t-display);
+  line-height: 1.06;
+  letter-spacing: -.03em;
+  margin: 0 0 1.25rem;
+  text-wrap: balance;
+}
+.tag-row { display: flex; flex-wrap: wrap; gap: .5rem; }
+.tag-row .chip { font-size: var(--t-md); padding: .45rem .95rem; }
+
+.hero-plate {
+  background: var(--dark);
+  border-radius: var(--r-xl);
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+}
+.hero-plate svg { width: 100%; height: 100%; color: var(--cyan); }
+
+@media (max-width: 820px) {
+  .hero { grid-template-columns: 1fr; }
+  .hero-plate { max-width: 22rem; aspect-ratio: 4 / 3; justify-self: center; width: 100%; }
+}
+
+/* ---------------- home: mini cards ---------------- */
+
+.mini {
+  display: flex;
+  align-items: center;
+  gap: .9rem;
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--page);
+  padding: .9rem 1.1rem;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 150ms var(--ease), transform 150ms var(--ease);
+}
+.mini:hover { border-color: var(--text); transform: translateY(-2px); }
+.mini-ico {
+  flex: 0 0 auto;
+  width: 40px; height: 40px;
+  border-radius: var(--r-sm);
+  display: grid;
+  place-items: center;
+  color: var(--inverse);
+}
+.mini b { font-size: var(--t-md); font-weight: 700; display: block; }
+.mini span { font-size: var(--t-sm); color: var(--text-2); display: block; }
+.mini .arrow { margin-left: auto; color: var(--text-mute); }
+
+/* ---------------- home: bento stats ---------------- */
+
+.bento { display: grid; grid-template-columns: 1.15fr 1fr; gap: var(--gap); }
+.bento-col { display: grid; gap: var(--gap); align-content: stretch; }
+
+.stat {
+  border-radius: var(--r-xl);
+  padding: clamp(1.25rem, 2.5vw, 2rem);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 9rem;
+}
+.stat .label { font-size: var(--t-sm); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; margin: 0 0 .5rem; opacity: .85; }
+.stat .big { font-family: var(--sans); font-weight: 800; font-size: clamp(2.25rem, 4.5vw, 3.5rem); letter-spacing: -.03em; line-height: 1; margin: 0 0 .6rem; }
+.stat .sub { font-size: var(--t-md); line-height: 1.55; margin: 0; opacity: .9; max-width: 24rem; }
+
+.stat--cyan    { background: var(--cyan);    color: var(--dark); }
+.stat--dark    { background: var(--dark);    color: var(--inverse); }
+.stat--dark .sub { color: var(--text-mute); opacity: 1; }
+.stat--magenta { background: var(--magenta); color: var(--inverse); }
+
+.where {
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  background: var(--surface);
+  padding: clamp(1.25rem, 2.5vw, 1.75rem) clamp(1.25rem, 2.5vw, 2rem);
+  margin-top: var(--gap);
+}
+.where .label { font-size: var(--t-sm); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-2); margin: 0 0 .35rem; }
+.where b { font-family: var(--head); font-size: var(--t-h4); letter-spacing: -.02em; display: block; margin-bottom: .3rem; }
+.where p { font-size: var(--t-md); color: var(--text-2); margin: 0; }
+
+@media (max-width: 820px) { .bento { grid-template-columns: 1fr; } }
+
+/* ---------------- home: tools ---------------- */
+
+.tools { border: 1px solid var(--border); border-radius: var(--r-xl); background: var(--page); padding: clamp(1.25rem, 2.5vw, 1.75rem) clamp(1.25rem, 2.5vw, 2rem); }
+.tools .label { font-size: var(--t-sm); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-2); margin: 0 0 .2rem; }
+.tools b { font-family: var(--head); font-size: var(--t-h5); display: block; margin-bottom: 1rem; }
+.tool-row { display: flex; flex-wrap: wrap; gap: .55rem; }
+.tool {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  background: var(--dark);
+  color: var(--inverse);
+  border-radius: 999px;
+  font-size: var(--t-md);
+  font-weight: 600;
+  padding: .55rem 1.05rem;
+}
+.tool::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--cyan); }
+.tool:nth-child(4n+2)::before { background: var(--magenta); }
+.tool:nth-child(4n+3)::before { background: var(--green); }
+.tool:nth-child(4n+4)::before { background: var(--orange); }
+
+/* ---------------- home: featured project ---------------- */
+
+.feature {
+  display: grid;
+  grid-template-columns: 1.35fr 1fr;
+  gap: clamp(1.5rem, 3vw, 2.5rem);
+  padding: clamp(1.5rem, 3.5vw, 2.75rem);
+  align-items: center;
+}
+.feature h2 { font-size: var(--t-h2); font-weight: 700; margin: 0 0 .75rem; text-wrap: balance; }
+.feature > div > p { font-size: var(--t-lg); color: var(--text-3); line-height: 1.6; margin: 0 0 1.5rem; max-width: 30rem; }
+.feature .cta-row { display: flex; flex-wrap: wrap; gap: .6rem; }
+
+.keyspec {
+  background: var(--page);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 1.25rem 1.35rem;
+}
+.keyspec .label { display: flex; align-items: center; gap: .5rem; font-size: var(--t-md); font-weight: 700; margin: 0 0 .9rem; }
+.keyspec .label::before { content: "✓"; width: 22px; height: 22px; border-radius: 50%; background: var(--green); color: var(--inverse); font-size: .7rem; display: grid; place-items: center; }
+.keyspec ul { list-style: none; margin: 0; padding: 0; }
+.keyspec li {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: var(--t-md);
+  padding: .55rem .8rem;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  margin-bottom: .5rem;
+}
+.keyspec li:last-child { margin-bottom: 0; }
+.keyspec .k { color: var(--text-2); }
+.keyspec .v { font-weight: 600; text-align: right; }
+
+@media (max-width: 820px) { .feature { grid-template-columns: 1fr; } }
+
+/* ---------------- home: systems strip ---------------- */
+
+.strip-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; margin-bottom: 1.1rem; }
+.strip-head h2 { font-size: var(--t-h4); font-weight: 700; margin: 0; }
+.strip-nav { display: flex; gap: .4rem; }
+.strip-nav button {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--page);
+  color: var(--text);
   cursor: pointer;
-  transition: color 140ms var(--ease), border-color 140ms var(--ease);
+  font-size: 1rem;
+  display: grid;
+  place-items: center;
+  transition: background 150ms var(--ease), color 150ms var(--ease);
 }
-.filters button:hover { color: var(--ink); }
-.filters button[aria-pressed="true"] { color: var(--ink); border-bottom-color: var(--ink); }
+.strip-nav button:hover { background: var(--dark); color: var(--inverse); border-color: var(--dark); }
+
+.strip {
+  display: flex;
+  gap: var(--gap);
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  padding-bottom: .25rem;
+}
+.strip::-webkit-scrollbar { display: none; }
+.strip a {
+  flex: 0 0 10.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--page);
+  padding: .8rem;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 150ms var(--ease), transform 150ms var(--ease);
+}
+.strip a:hover { border-color: var(--text); transform: translateY(-2px); }
+.strip .thumb {
+  background: var(--muted-bg);
+  border-radius: var(--r-md);
+  aspect-ratio: 16 / 11;
+  overflow: hidden;
+  margin-bottom: .6rem;
+}
+.strip .thumb svg { width: 100%; height: 100%; color: var(--text-3); display: block; }
+.strip .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.strip b { display: block; font-size: var(--t-md); font-weight: 700; line-height: 1.25; }
+.strip span { font-size: var(--t-sm); color: var(--text-mute); }
+
+/* ---------------- home: blog + cta ---------------- */
+
+.post-hero { display: grid; grid-template-columns: 1.1fr 1fr; overflow: hidden; }
+.post-hero .card-img { aspect-ratio: auto; min-height: 14rem; height: 100%; }
+@media (max-width: 820px) {
+  .post-hero { grid-template-columns: 1fr; }
+  .post-hero .card-img { aspect-ratio: 16 / 9; height: auto; }
+}
+
+.cta {
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  background: var(--surface);
+  padding: clamp(1.5rem, 3.5vw, 2.5rem);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+.cta h3 { font-size: var(--t-h3); font-weight: 700; margin: .1rem 0 .35rem; }
+.cta p { margin: 0; color: var(--text-2); font-size: var(--t-md); max-width: 30rem; }
+.cta .cta-row { display: flex; gap: .6rem; flex-wrap: wrap; }
+
+/* ---------------- filters ---------------- */
+
+.filters { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 1.5rem; }
+.filters button {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--page);
+  color: var(--text-3);
+  font-family: var(--sans);
+  font-size: var(--t-md);
+  font-weight: 600;
+  padding: .55rem 1.1rem;
+  cursor: pointer;
+  transition: background 150ms var(--ease), color 150ms var(--ease), border-color 150ms var(--ease);
+}
+.filters button:hover { border-color: var(--text); color: var(--text); }
+.filters button[aria-pressed="true"] { background: var(--dark); color: var(--inverse); border-color: var(--dark); }
+
+.tally { font-size: var(--t-md); color: var(--text-mute); }
 
 /* ---------------- detail pages ---------------- */
 
-.article-head { max-width: 46rem; margin-inline: auto; text-align: center; padding-block: 3.5rem 0; }
-.article-head .eyebrow { font-size: var(--t-17); }
+.article-head { max-width: 46rem; margin-inline: auto; text-align: center; padding-block: clamp(1.75rem, 4vw, 3rem) 0; }
+.article-head .chip { margin-bottom: 1rem; }
 .article-head h1 {
-  font-family: var(--serif);
-  font-weight: 400;
-  font-size: var(--t-40);
-  line-height: 1.14;
-  margin: .35rem 0 1rem;
-  color: var(--ink);
+  font-size: var(--t-h1);
+  font-weight: 700;
+  line-height: 1.12;
+  margin: 0 0 .9rem;
   text-wrap: balance;
 }
-.article-head .byline { font-size: var(--t-15); }
+.article-head .meta { font-size: var(--t-md); color: var(--text-2); margin: 0; }
 
-.hero-figure { margin: 2.5rem 0 0; }
-.hero-figure .card-img { aspect-ratio: 2 / 1; margin: 0; }
+.hero-figure { margin: 2rem 0 0; }
+.hero-figure .card-img {
+  aspect-ratio: 2 / 1;
+  border-radius: var(--r-xl);
+  border: 1px solid var(--border);
+}
 .hero-figure figcaption {
-  font-size: var(--t-13);
-  font-style: italic;
-  color: var(--muted);
-  padding-top: .625rem;
+  font-size: var(--t-sm);
+  color: var(--text-mute);
+  padding-top: .7rem;
   text-align: center;
 }
 
-.prose { max-width: var(--measure); margin-inline: auto; padding-block: 2.5rem 1rem; }
-.prose p { margin: 0 0 var(--lead); }
-/* :first-child, not :first-of-type — otherwise a post that opens with an image
-   or a heading drops a cap on some paragraph halfway down the page. */
-.prose > p:first-child::first-letter {
-  float: left;
-  font-family: var(--display);
-  font-size: 3.9em;
-  line-height: .82;
-  padding: .04em .08em 0 0;
-  color: var(--ink);
-}
-.prose h2 {
-  font-family: var(--serif);
-  font-weight: 400;
-  font-size: var(--t-28);
-  line-height: 1.2;
-  margin: calc(var(--lead) * 1.5) 0 .75rem;
-  color: var(--ink);
-}
+.prose { max-width: var(--measure); margin-inline: auto; padding-block: 2.25rem 1rem; }
+.prose p { font-size: 1.0625rem; line-height: 1.75; color: var(--text-3); margin: 0 0 1.35rem; }
+.prose h2 { font-size: var(--t-h4); font-weight: 700; margin: 2.5rem 0 .8rem; color: var(--text); }
+.prose h3 { font-size: var(--t-h5); font-weight: 700; margin: 2rem 0 .6rem; color: var(--text); }
 .prose blockquote {
-  margin: var(--lead) 0;
-  padding: 0 0 0 1.25rem;
-  border-left: 2px solid var(--ink);
-  font-style: italic;
-  font-size: var(--t-23);
-  line-height: 1.4;
-  color: var(--ink);
+  margin: 1.75rem 0;
+  padding: 1rem 1.25rem;
+  border-left: 3px solid var(--cyan);
+  border-radius: 0 var(--r-md) var(--r-md) 0;
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--t-lg);
+  line-height: 1.6;
 }
-/* ---- authored body content ----
-   Everything the editor can produce has to land somewhere deliberate here,
-   or a post with an image and a list quietly looks broken. */
+.prose blockquote p { margin: 0; color: inherit; font-size: inherit; }
 
-.prose a { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; text-decoration-thickness: 1px; }
-.prose a:hover { text-decoration-thickness: 2px; }
+.prose a { color: var(--text); text-decoration: underline; text-decoration-color: var(--cyan); text-decoration-thickness: 2px; text-underline-offset: 3px; }
+.prose a:hover { color: var(--cyan); }
 
-.prose ul:not(.spec), .prose ol { margin: 0 0 var(--lead); padding-left: 1.4rem; }
-.prose li { margin-bottom: .35rem; }
-.prose li::marker { color: var(--muted); }
+.prose ul:not(.spec), .prose ol { margin: 0 0 1.35rem; padding-left: 1.4rem; color: var(--text-3); font-size: 1.0625rem; line-height: 1.75; }
+.prose li { margin-bottom: .4rem; }
+.prose li::marker { color: var(--text-mute); }
 
-.prose hr { border: 0; border-top: 1px solid var(--ink); width: 4rem; margin: calc(var(--lead) * 1.5) auto; }
+.prose hr { border: 0; border-top: 1px solid var(--border); margin: 2.5rem 0; }
 
-.prose code { font-family: var(--mono); font-size: .86em; background: var(--plate-bg); padding: .12em .34em; }
-.prose pre { background: var(--plate-bg); padding: 1.125rem 1.25rem; overflow-x: auto; margin: var(--lead) 0; }
-.prose pre code { background: none; padding: 0; font-size: var(--t-13); line-height: 1.6; }
-
-/* A wide table must scroll inside itself — the page body never scrolls sideways. */
-.prose table { display: block; width: max-content; max-width: 100%; overflow-x: auto; border-collapse: collapse; margin: var(--lead) 0; font-size: var(--t-15); }
-.prose th, .prose td { text-align: left; padding: .5rem 1.25rem .5rem 0; border-bottom: 1px solid var(--hairline); }
-.prose th { font-style: italic; font-weight: 400; color: var(--muted); }
-
-/* Figures. The renderer turns every Markdown image into one of these, so a
-   captioned image is the default rather than a special case. */
-.prose .fig { margin: calc(var(--lead) * 1.25) 0; }
-.prose .fig img { display: block; width: 100%; height: auto; }
-.prose .fig figcaption {
-  font-size: var(--t-13); font-style: italic; color: var(--muted);
-  padding-top: .5rem; margin-top: .5rem; border-top: 1px solid var(--hairline);
+.prose code { font-family: var(--mono); font-size: .85em; background: var(--muted-bg); border-radius: 6px; padding: .14em .38em; color: var(--text); }
+.prose pre {
+  background: var(--dark);
+  color: #E7E9EF;
+  border-radius: var(--r-md);
+  padding: 1.15rem 1.3rem;
+  overflow-x: auto;
+  margin: 1.75rem 0;
 }
+.prose pre code { background: none; padding: 0; color: inherit; font-size: var(--t-md); line-height: 1.65; }
+
+/* A wide table scrolls inside itself — the page never scrolls sideways. */
+.prose table { display: block; width: max-content; max-width: 100%; overflow-x: auto; border-collapse: collapse; margin: 1.75rem 0; font-size: var(--t-md); }
+.prose th, .prose td { text-align: left; padding: .55rem 1.25rem .55rem 0; border-bottom: 1px solid var(--border); color: var(--text-3); }
+.prose th { font-size: var(--t-sm); font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--text-2); }
+
+/* Figures. The renderer turns every Markdown image into one of these. */
+.prose .fig { margin: 2rem 0; }
+.prose .fig img { display: block; width: 100%; height: auto; border-radius: var(--r-md); border: 1px solid var(--border); }
+.prose .fig figcaption { font-size: var(--t-sm); color: var(--text-mute); padding-top: .6rem; }
 
 /* Break out of the reading measure. margin-left:50% puts the left edge at the
    container's centre; the transform pulls it back by half its own width. */
-.prose .fig--wide { width: min(46rem, 92vw); margin-left: 50%; transform: translateX(-50%); }
-.prose .fig--full { width: min(88rem, 94vw); margin-left: 50%; transform: translateX(-50%); }
+.prose .fig--wide { width: min(52rem, 92vw); margin-left: 50%; transform: translateX(-50%); }
+.prose .fig--full { width: min(68rem, 94vw); margin-left: 50%; transform: translateX(-50%); }
 @media (max-width: 700px) {
   .prose .fig--wide, .prose .fig--full { width: 100%; margin-left: 0; transform: none; }
 }
 
-.prose ul.spec { list-style: none; margin: var(--lead) 0; padding: 0; border-top: 1px solid var(--hairline); }
+.prose ul.spec {
+  list-style: none;
+  margin: 2rem 0;
+  padding: 1.1rem 1.2rem;
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+}
 .prose ul.spec li {
   display: flex;
   justify-content: space-between;
   gap: 1.5rem;
-  padding: .55rem 0;
-  border-bottom: 1px solid var(--hairline);
-  font-size: var(--t-15);
+  padding: .55rem .2rem;
+  border-bottom: 1px solid var(--border);
+  font-size: var(--t-md);
+  margin: 0;
 }
-.prose ul.spec .k { font-style: italic; color: var(--muted); }
-.prose ul.spec .v { font-variant-numeric: tabular-nums; color: var(--ink); }
+.prose ul.spec li:last-child { border-bottom: 0; }
+.prose ul.spec .k { color: var(--text-2); }
+.prose ul.spec .v { font-weight: 600; font-variant-numeric: tabular-nums; color: var(--text); text-align: right; }
 
-.codewrap { max-width: 46rem; margin: var(--lead) auto; overflow-x: auto; background: var(--plate-bg); padding: 1.125rem 1.25rem; }
-.codewrap pre { margin: 0; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: var(--t-13); line-height: 1.6; color: var(--text); }
+.backline { margin: 2.5rem 0 3rem; text-align: center; }
 
-.backline { border-top: 1px solid var(--hairline); margin-top: 3rem; padding-top: 1.25rem; text-align: center; }
-.backline a { font-style: italic; color: var(--muted); text-decoration: none; }
-.backline a:hover { color: var(--ink); }
+/* ---------------- contact ---------------- */
 
-/* ---------------- contact form ---------------- */
-
-.corr { max-width: 34rem; display: flex; flex-direction: column; gap: 1.5rem; }
-.field { display: flex; flex-direction: column; gap: .3rem; }
-.field label { font-style: italic; font-size: var(--t-15); color: var(--muted); }
+.corr { max-width: 34rem; display: flex; flex-direction: column; gap: 1.1rem; }
+.field { display: flex; flex-direction: column; gap: .35rem; }
+.field label { font-size: var(--t-sm); font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--text-2); }
 .field.sel { position: relative; }
 .field.sel::after {
-  content: "▾"; position: absolute; right: .3rem; bottom: .5rem;
-  color: var(--muted); pointer-events: none; font-size: var(--t-13);
+  content: "▾"; position: absolute; right: 1rem; bottom: .8rem;
+  color: var(--text-mute); pointer-events: none; font-size: var(--t-sm);
 }
 .corr input, .corr select, .corr textarea {
-  font-family: var(--serif);
-  font-size: var(--t-17);
+  font-family: var(--sans);
+  font-size: var(--t-md);
   color: var(--text);
-  background: transparent;
-  border: 0;
-  border-bottom: 1px solid var(--ink);
-  border-radius: 0;
-  padding: .4rem 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: .7rem .95rem;
   width: 100%;
   appearance: none;
   -webkit-appearance: none;
+  transition: border-color 150ms var(--ease);
 }
-.corr textarea { border: 1px solid var(--ink); padding: .75rem .875rem; resize: vertical; min-height: 8rem; line-height: 1.55; }
+.corr input:focus, .corr select:focus, .corr textarea:focus { border-color: var(--cyan); outline: none; background: var(--page); }
+.corr textarea { resize: vertical; min-height: 8rem; line-height: 1.55; }
 .corr-foot { display: flex; align-items: center; flex-wrap: wrap; gap: .875rem 1.25rem; }
-.send {
-  font-family: var(--serif);
-  font-style: italic;
-  font-size: var(--t-17);
-  background: var(--block-bg);
-  color: var(--block-fg);
-  border: 0;
-  border-radius: 0;
-  padding: .6rem 1.75rem;
-  cursor: pointer;
-}
-.send:hover { opacity: .85; }
-.send[disabled] { opacity: .5; cursor: default; }
-.corr-note { font-style: italic; font-size: var(--t-15); color: var(--muted); }
+.corr-note { font-size: var(--t-sm); color: var(--text-mute); }
 
-.channels { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--hairline); }
+.channels { list-style: none; margin: 0; padding: .35rem 1.2rem; border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--surface); }
 .channels li {
   display: flex; justify-content: space-between; gap: 1.5rem;
-  padding: .6rem 0; border-bottom: 1px solid var(--hairline); font-size: var(--t-15);
+  padding: .7rem 0; border-bottom: 1px solid var(--border); font-size: var(--t-md);
 }
-.channels .k { font-style: italic; color: var(--muted); }
+.channels li:last-child { border-bottom: 0; }
+.channels .k { color: var(--text-2); }
+.channels .v { font-weight: 600; }
 
 /* ---------------- footer ---------------- */
 
-.subjects { border-top: 2px solid var(--ink); padding-block: 2.5rem 3.5rem; }
-.subjects p {
-  font-family: var(--display);
-  font-size: var(--t-64);
-  line-height: 1.06;
-  margin: 0;
-  color: var(--ink);
-  text-wrap: balance;
-}
-
-.endblock { background: var(--block-bg); color: var(--block-fg); padding-block: 4rem 3rem; }
-.endblock .statement {
-  max-width: 34rem;
-  margin: 0 auto;
-  text-align: center;
-  font-size: var(--t-19);
-  line-height: 1.6;
-}
-.sub-head { text-align: center; margin: 3.25rem 0 1.25rem; font-size: var(--t-19); }
-.subscribe { display: flex; max-width: 30rem; margin-inline: auto; }
-.subscribe input {
-  flex: 1; min-width: 0;
-  font-family: var(--serif); font-size: var(--t-17);
-  color: var(--ink); background: var(--bg);
-  border: 0; border-radius: 0; padding: .75rem .875rem;
-}
-.subscribe button {
-  background: var(--block-bg); color: var(--block-fg);
-  border: 1px solid var(--block-line); border-left: 0; border-radius: 0;
-  padding: 0 1.1rem; cursor: pointer; font-size: var(--t-19);
-}
-.subscribe button:hover { background: var(--block-line); }
-.sub-note { text-align: center; font-style: italic; font-size: var(--t-13); color: var(--block-muted); margin: .875rem 0 0; }
-
-.end-social { display: flex; justify-content: center; gap: 1.5rem; margin-top: 3rem; }
-.end-social a { color: var(--block-fg); opacity: .9; }
-.end-social a:hover { opacity: .55; }
-
-.end-links {
-  display: flex; justify-content: center; flex-wrap: wrap; gap: .5rem 2.25rem;
-  margin-top: 1.75rem; list-style: none; padding: 0;
-}
-.end-links a { font-style: italic; font-size: var(--t-15); text-decoration: none; }
-.end-links a:hover { text-decoration: underline; }
-
-.colophon-line {
-  text-align: center; font-size: var(--t-13); font-style: italic;
-  color: var(--muted); padding-block: 1.5rem; border-top: 1px solid var(--hairline);
-}
+.footer { border-top: 1px solid var(--border); margin-top: 3rem; padding-block: 2.5rem 2rem; text-align: center; }
+.foot-links { display: flex; justify-content: center; flex-wrap: wrap; gap: .5rem; margin: 0 0 1.5rem; padding: 0; list-style: none; }
+.colophon { font-size: var(--t-sm); color: var(--text-mute); margin: 0; }
 
 /* ---------------- views ---------------- */
 
@@ -507,63 +784,202 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .view.is-on { display: block; animation: fade 260ms var(--ease); }
 @keyframes fade { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
 
-.empty { font-style: italic; color: var(--muted); padding-block: 2rem; }
+.empty { color: var(--text-mute); padding-block: 1.5rem; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+  .strip { scroll-behavior: auto; }
 }
 </style>
 
-<header class="masthead">
-  <div class="wrap">
-    <div class="mast-top">
-      <div class="mast-util">
-        <div class="social" id="mastSocial"></div>
-        <form class="mast-search" id="searchForm" role="search">
-          <input id="searchInput" type="search" placeholder="Search" aria-label="Search projects and writing">
-          <button type="submit" aria-label="Search">
-            <svg width="17" height="17" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7">
-              <circle cx="7.5" cy="7.5" r="5.4"/><path d="M11.6 11.6 L16.6 16.6"/>
-            </svg>
-          </button>
-        </form>
-      </div>
-      <a class="wordmark" href="#/" data-nav>Bench</a>
-    </div>
+<header class="topbar">
+  <div class="wrap topbar-in">
+    <a class="wordmark" href="#/" data-nav>Bench<i>.</i></a>
+    <nav class="topnav" aria-label="Primary">
+      <a href="#/" data-nav data-view="home">Home</a>
+      <a href="#/projects" data-nav data-view="projects">Projects</a>
+      <a href="#/blogs" data-nav data-view="blogs">Blog</a>
+      <a href="#/about" data-nav data-view="about">About</a>
+      <a href="#/contact" data-nav data-view="contact">Contact</a>
+      <form class="mast-search" id="searchForm" role="search">
+        <input id="searchInput" type="search" placeholder="Search" aria-label="Search projects and writing">
+        <button type="submit" aria-label="Search">
+          <svg width="15" height="15" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8">
+            <circle cx="7.5" cy="7.5" r="5.4"/><path d="M11.6 11.6 L16.6 16.6"/>
+          </svg>
+        </button>
+      </form>
+    </nav>
   </div>
-  <nav class="mast-nav" aria-label="Primary">
-    <div class="wrap">
-      <ul>
-        <li><a href="#/" data-nav data-view="home">Home</a></li>
-        <li><a href="#/projects" data-nav data-view="projects">Projects</a></li>
-        <li><a href="#/blogs" data-nav data-view="blogs">Blogs</a></li>
-        <li><a href="#/about" data-nav data-view="about">About</a></li>
-        <li><a href="#/contact" data-nav data-view="contact">Contact</a></li>
-      </ul>
-    </div>
-  </nav>
 </header>
 
 <!-- ==================== HOME ==================== -->
 <main id="view-home" class="view is-on">
+
+  <section class="band">
+    <div class="wrap" id="bannerHost"></div>
+  </section>
+
   <section class="band">
     <div class="wrap">
-      <div class="sec-head"><h2>Latest</h2><a href="#/projects" data-nav>All projects →</a></div>
-      <div class="latest" id="latestGrid"></div>
+      <div class="panel hero">
+        <div>
+          <p class="kicker">Self-hosted · Smart home · Networking</p>
+          <h1>Hi, I'm Aryan. I make an ordinary flat run itself — and write down how.</h1>
+          <div class="tag-row">
+            <span class="chip c-cyan">Networking</span>
+            <span class="chip c-magenta">ESPHome</span>
+            <span class="chip c-green">Home Assistant</span>
+            <span class="chip c-orange">3D printing</span>
+            <span class="chip c-cyan">Docker</span>
+            <span class="chip c-magenta">Self-hosted</span>
+          </div>
+        </div>
+        <div class="hero-plate" aria-hidden="true">
+          <svg viewBox="0 0 320 260" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" preserveAspectRatio="xMidYMid meet">
+            <!-- flat outline -->
+            <path d="M30 118 L160 40 L290 118"/>
+            <path d="M52 106 V218 H268 V106"/>
+            <!-- router node -->
+            <rect x="76" y="128" width="52" height="30" rx="4"/>
+            <text x="84" y="147" font-family="Menlo, monospace" font-size="9" fill="currentColor" stroke="none">router</text>
+            <path d="M102 128 q10 -18 0 -34" stroke-dasharray="2 4"/>
+            <path d="M112 126 q22 -26 6 -52" stroke-dasharray="2 4"/>
+            <!-- server -->
+            <rect x="192" y="120" width="52" height="44" rx="4"/>
+            <line x1="200" y1="132" x2="236" y2="132"/><line x1="200" y1="142" x2="236" y2="142"/>
+            <circle cx="203" cy="153" r="1.6" fill="currentColor"/>
+            <text x="196" y="178" font-family="Menlo, monospace" font-size="9" fill="currentColor" stroke="none">server</text>
+            <!-- links -->
+            <path d="M128 143 H192" stroke-dasharray="3 3"/>
+            <!-- devices -->
+            <circle cx="86" cy="196" r="7"/><circle cx="126" cy="196" r="7"/><circle cx="166" cy="196" r="7"/>
+            <circle cx="206" cy="196" r="7"/><circle cx="246" cy="196" r="7"/>
+            <path d="M96 143 q-14 30 -10 46" stroke-dasharray="2 3"/>
+            <path d="M110 158 q10 20 16 31" stroke-dasharray="2 3"/>
+            <path d="M150 158 q12 18 16 31" stroke-dasharray="2 3"/>
+            <path d="M212 164 q-4 18 -6 25" stroke-dasharray="2 3"/>
+            <path d="M232 164 q10 16 14 25" stroke-dasharray="2 3"/>
+            <line x1="30" y1="238" x2="290" y2="238" stroke-dasharray="3 3"/>
+            <text x="30" y="254" font-family="Menlo, monospace" font-size="9" fill="currentColor" stroke="none">fig. 1 — one flat, everything local</text>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="band">
+    <div class="wrap grid-2" id="miniCards"></div>
+  </section>
+
+  <section class="band">
+    <div class="wrap">
+      <div class="bento">
+        <div class="stat stat--cyan">
+          <p class="label">On the bench</p>
+          <p class="big"><span id="statProjects">—</span> projects</p>
+          <p class="sub">Documented end to end — the hardware, the software, and the network between them.</p>
+        </div>
+        <div class="bento-col">
+          <div class="stat stat--dark">
+            <p class="label">The fleet</p>
+            <p class="big">ESPHome</p>
+            <p class="sub">Every device carries a local fallback in its own firmware — losing the server costs the automations, not the lights.</p>
+          </div>
+          <div class="stat stat--magenta">
+            <p class="label">What I do best</p>
+            <p class="big">Self-host</p>
+            <p class="sub">Services live at home, reachable anywhere — not in someone else's cloud.</p>
+          </div>
+        </div>
+      </div>
+      <div class="where">
+        <p class="label">Where it runs</p>
+        <b>At home</b>
+        <p>An office-desktop Proxmox box, a Raspberry Pi that routes the internet, and a rack that is honestly a shelf.</p>
+      </div>
     </div>
   </section>
 
   <section class="band">
     <div class="wrap">
-      <div class="sec-head"><h2>Trending</h2><a href="#/projects" data-nav>The index →</a></div>
-      <div class="grid-4" id="trendingGrid"></div>
+      <div class="tools">
+        <p class="label">Tools I use</p>
+        <b>The daily stack</b>
+        <div class="tool-row">
+          <span class="tool">Home Assistant</span>
+          <span class="tool">ESPHome</span>
+          <span class="tool">Docker</span>
+          <span class="tool">Proxmox</span>
+          <span class="tool">OpenWrt</span>
+          <span class="tool">Node-RED</span>
+          <span class="tool">Tailscale</span>
+          <span class="tool">MQTT</span>
+          <span class="tool">Klipper</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="band">
+    <div class="wrap" id="featHost"></div>
+  </section>
+
+  <section class="band">
+    <div class="wrap">
+      <div class="strip-head">
+        <div>
+          <p class="kicker k-magenta">Around the house</p>
+          <h2>The systems that run the place</h2>
+        </div>
+        <div class="strip-nav">
+          <button id="stripPrev" aria-label="Scroll back">←</button>
+          <button id="stripNext" aria-label="Scroll forward">→</button>
+        </div>
+      </div>
+      <div class="strip" id="stripHost"></div>
     </div>
   </section>
 
   <section class="band">
     <div class="wrap">
-      <div class="sec-head"><h2>From the blog</h2><a href="#/blogs" data-nav>All posts →</a></div>
-      <div class="grid-3" id="blogGrid"></div>
+      <div class="sec-head">
+        <div>
+          <p class="kicker k-green">Featured projects</p>
+          <h2>Some work worth visiting</h2>
+        </div>
+        <a class="pill pill--magenta" href="#/projects" data-nav>View all</a>
+      </div>
+      <div class="grid-3" id="workGrid"></div>
+    </div>
+  </section>
+
+  <section class="band">
+    <div class="wrap">
+      <div class="sec-head">
+        <div>
+          <p class="kicker k-orange">Notes from the bench</p>
+          <h2>Blog</h2>
+        </div>
+        <a class="pill" href="#/blogs" data-nav>All posts</a>
+      </div>
+      <div id="blogHome"></div>
+    </div>
+  </section>
+
+  <section class="band">
+    <div class="wrap">
+      <div class="cta">
+        <div>
+          <p class="kicker">My corner of the internet</p>
+          <h3>Bench is live</h3>
+          <p>The full index of projects and write-ups, self-hosted from the same shelf it documents.</p>
+        </div>
+        <div class="cta-row">
+          <a class="pill pill--cyan" href="#/projects" data-nav>Browse projects <span class="arrow">↗</span></a>
+          <a class="pill pill--magenta" href="#/contact" data-nav>Get in touch</a>
+        </div>
+      </div>
     </div>
   </section>
 </main>
@@ -572,11 +988,20 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 <main id="view-projects" class="view">
   <section class="band">
     <div class="wrap">
-      <div class="sec-head"><h2>Projects</h2><span id="projTally" class="byline"></span></div>
+      <div class="sec-head">
+        <div>
+          <p class="kicker">The index</p>
+          <h2>Projects</h2>
+        </div>
+        <span id="projTally" class="tally"></span>
+      </div>
       <div class="filters">
         <button data-filter="all" aria-pressed="true">Everything</button>
         <button data-filter="sw" aria-pressed="false">Software</button>
         <button data-filter="hw" aria-pressed="false">Hardware</button>
+        <button data-filter="sh" aria-pressed="false">Smart Home</button>
+        <button data-filter="net" aria-pressed="false">Networking</button>
+        <button data-filter="3d" aria-pressed="false">3D Printing</button>
         <button data-filter="ml" aria-pressed="false">Machine Learning</button>
       </div>
       <div class="grid-3" id="projectGrid"></div>
@@ -584,11 +1009,17 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   </section>
 </main>
 
-<!-- ==================== BLOGS ==================== -->
+<!-- ==================== BLOG ==================== -->
 <main id="view-blogs" class="view">
   <section class="band">
     <div class="wrap">
-      <div class="sec-head"><h2>Blogs</h2><span id="blogTally" class="byline"></span></div>
+      <div class="sec-head">
+        <div>
+          <p class="kicker k-orange">Writing</p>
+          <h2>Blog</h2>
+        </div>
+        <span id="blogTally" class="tally"></span>
+      </div>
       <div class="grid-3" id="allBlogGrid"></div>
     </div>
   </section>
@@ -598,7 +1029,13 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 <main id="view-search" class="view">
   <section class="band">
     <div class="wrap">
-      <div class="sec-head"><h2 id="searchHead">Search</h2><span id="searchTally" class="byline"></span></div>
+      <div class="sec-head">
+        <div>
+          <p class="kicker">Results</p>
+          <h2 id="searchHead">Search</h2>
+        </div>
+        <span id="searchTally" class="tally"></span>
+      </div>
       <div class="grid-3" id="searchGrid"></div>
     </div>
   </section>
@@ -613,33 +1050,33 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 <main id="view-about" class="view">
   <div class="wrap">
     <div class="article-head">
-      <p class="eyebrow">About</p>
-      <h1>I build things that have to survive contact with the physical world</h1>
-      <p class="byline">Compilers, telescopes, and the models that decide what they’re looking at</p>
+      <span class="chip c-cyan">About</span>
+      <h1>A bench is where a thing is built and measured before anyone else sees it</h1>
+      <p class="meta">Smart-home hardware, self-hosted software, and the network underneath</p>
     </div>
     <div class="prose">
-      <p>Bench is where the work gets written down. The name is the literal one — a bench is where a thing is
-      built, measured, and found wanting before anyone else sees it, and that is the part worth publishing.</p>
-      <p>I work across three domains that don’t usually share a portfolio. Software: compilers, build systems,
-      developer tools. Hardware: motion control, sensing, things with a bill of materials. Machine learning:
-      mostly applied, mostly on-device, mostly outdoors.</p>
-      <p>The through-line is that each one produces a claim about the physical world, and a claim needs evidence.
-      So every project here carries its own headline number in its own units — a build speedup, a tracking error
-      in arcseconds, an F1 score — and links to the writing that shows the work.</p>
-      <blockquote>A specification that does not say what it assumes is not a specification. It is a description
-      of one run.</blockquote>
+      <p>Bench is where the work gets written down. The name is the literal one — a bench is where a thing
+      is built, measured, and found wanting before anyone else sees it, and that is the part worth
+      publishing.</p>
+      <p>The work itself is one flat and everything in it: wall switches rewired around ESP32s, blinds that
+      pull their own chain through a printed gearbox, a mirror with a dashboard behind the glass, a Raspberry
+      Pi that routes the internet connection, and an office desktop that became a Proxmox server. Software
+      holds it together — Home Assistant, Docker, and a self-built CMS serving the page you are reading.</p>
+      <p>The recurring design principle is that no device depends on the rest of the house to do its job.
+      Every ESPHome board carries a local fallback binding in its own firmware, so losing the server costs
+      the automations but not the lights.</p>
+      <blockquote>A specification that does not say what it assumes is not a specification. It is a
+      description of one run.</blockquote>
       <h2>How this is set</h2>
-      <p>Everything is one serif family: a transitional for display and an old-style for reading, with italic
-      doing the work that colour usually does. There is no second typeface and no accent hue — hierarchy comes
-      from scale, italic, and the weight of a rule.</p>
-      <p>The illustrations are hand-drawn SVG line plates rather than photographs. For hardware that is the
-      native representation anyway: a dimensioned orthographic drawing carries more than a snapshot of a
-      breadboard would.</p>
+      <p>Two sans-serifs: Inter for display and body, Plus Jakarta Sans for headings. Four accent colours
+      used systematically — cyan for software, magenta for hardware, green for machine learning, orange for
+      writing. Projects without photographs fall back to hand-drawn SVG line plates, so an image slot is
+      never empty.</p>
       <ul class="spec">
-        <li><span class="k">Display</span><span class="v">Playfair / Hoefler Text</span></li>
-        <li><span class="k">Reading</span><span class="v">Iowan Old Style</span></li>
-        <li><span class="k">Measure</span><span class="v">38rem / ~66 characters</span></li>
-        <li><span class="k">Colour</span><span class="v">None</span></li>
+        <li><span class="k">Display &amp; body</span><span class="v">Inter</span></li>
+        <li><span class="k">Headings</span><span class="v">Plus Jakarta Sans</span></li>
+        <li><span class="k">Measure</span><span class="v">42rem / ~70 characters</span></li>
+        <li><span class="k">Accents</span><span class="v">Cyan · Magenta · Green · Orange</span></li>
         <li><span class="k">Plates</span><span class="v">Inline SVG, one stroke</span></li>
       </ul>
     </div>
@@ -650,11 +1087,16 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 <main id="view-contact" class="view">
   <section class="band">
     <div class="wrap">
-      <div class="sec-head"><h2>Contact</h2></div>
+      <div class="sec-head">
+        <div>
+          <p class="kicker k-magenta">Say hello</p>
+          <h2>Contact</h2>
+        </div>
+      </div>
       <div class="grid-3" style="align-items:start">
         <div style="grid-column: span 2">
-          <p style="max-width:34rem;margin:0 0 2rem">Happy to hear about work that doesn’t fit neatly in one
-          domain — that’s most of the interesting work. Slowest to reply in October, when the sky is clear.</p>
+          <p style="max-width:34rem;margin:0 0 1.75rem;color:var(--text-3)">Happy to hear about work that
+          doesn't fit neatly in one discipline — that's most of the interesting work.</p>
           <form class="corr" id="corrForm" novalidate>
             <div class="field">
               <label for="c-name">Name</label>
@@ -668,9 +1110,8 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
               <label for="c-subject">Regarding</label>
               <select id="c-subject">
                 <option>A project</option>
-                <option>Something in the blog</option>
+                <option>Something on the blog</option>
                 <option>Contract or collaboration</option>
-                <option>Speaking or teaching</option>
                 <option>Something else</option>
               </select>
             </div>
@@ -679,18 +1120,16 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
               <textarea id="c-body" rows="7"></textarea>
             </div>
             <div class="corr-foot">
-              <button class="send" type="submit">Send</button>
+              <button class="pill pill--dark" type="submit">Send message</button>
               <span class="corr-note" id="corrNote">Typically answered within a week</span>
             </div>
           </form>
         </div>
         <div>
-          <p class="eyebrow" style="margin-bottom:.75rem">Direct</p>
+          <p class="kicker" style="margin-bottom:.75rem">Direct</p>
           <ul class="channels">
+            <li><span class="k">GitHub</span><span class="v">@Aryan795</span></li>
             <li><span class="k">Email</span><span class="v">post@example.dev</span></li>
-            <li><span class="k">GitHub</span><span class="v">@aryanpandey</span></li>
-            <li><span class="k">Mastodon</span><span class="v">@aryan@fosstodon</span></li>
-            <li><span class="k">Key</span><span class="v">4F2A 8C11</span></li>
             <li><span class="k">Located</span><span class="v">UTC+05:30</span></li>
           </ul>
         </div>
@@ -700,42 +1139,29 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 </main>
 
 <!-- ==================== FOOTER ==================== -->
-<div class="wrap">
-  <section class="subjects">
-    <p>Compilers. Robotics. Machine Learning. Embedded. Optics. Control. Remote Sensing. Build Systems.</p>
-  </section>
-</div>
-
-<section class="endblock">
+<footer class="footer">
   <div class="wrap">
-    <p class="statement">Everything here is documented. Each project carries its own headline number in its own
-    units, and links to the writing that shows how it was arrived at.</p>
-
-    <p class="sub-head">Subscribe for new entries. Roughly monthly, never otherwise.</p>
-    <form class="subscribe" id="subForm">
-      <input id="subEmail" type="email" placeholder="Type your email…" aria-label="Email address">
-      <button type="submit" aria-label="Subscribe">→</button>
-    </form>
-    <p class="sub-note" id="subNote">Mockup — this form is not connected to anything</p>
-
-    <div class="end-social" id="endSocial"></div>
-
-    <ul class="end-links">
-      <li><a href="#/about" data-nav>About</a></li>
-      <li><a href="#/contact" data-nav>Contact</a></li>
-      <li><a href="#/projects" data-nav>Projects</a></li>
-      <li><a href="#/blogs" data-nav>Blogs</a></li>
+    <ul class="foot-links">
+      <li><a class="pill" href="#/projects" data-nav>Projects</a></li>
+      <li><a class="pill" href="#/blogs" data-nav>Blog</a></li>
+      <li><a class="pill" href="#/about" data-nav>About</a></li>
+      <li><a class="pill" href="#/contact" data-nav>Contact</a></li>
+      <li><a class="pill" href="https://github.com/Aryan795" target="_blank" rel="noopener noreferrer">GitHub <span class="arrow">↗</span></a></li>
     </ul>
+    <p class="colophon">Bench · Made on the bench · Set in Inter &amp; Plus Jakarta Sans</p>
   </div>
-</section>
-
-<p class="colophon-line">Bench · Mockup · Sample content · Set in Playfair &amp; Iowan Old Style</p>
+</footer>
 
 <script>
 (function () {
   "use strict";
 
-  var DOMAIN = { sw: "Software", hw: "Hardware", ml: "Machine Learning", wr: "Essay" };
+  var DOMAIN = { sw: "Software", hw: "Hardware", ml: "Machine Learning",
+                 sh: "Smart Home", net: "Networking", "3d": "3D Printing", wr: "Essay" };
+  /* One accent per domain, used everywhere a domain is shown. Four accents
+     across six domains, so two pairs share — the label disambiguates. */
+  var DCOLOR = { sw: "c-cyan", hw: "c-magenta", ml: "c-green",
+                 sh: "c-green", net: "c-cyan", "3d": "c-orange" };
 
   /* Seed content. Used verbatim when no backend answers — which is the case
      for the standalone published mockup, whose CSP blocks all network calls.
@@ -785,7 +1211,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 
   var SEED_POSTS = [
     { slug: "build-cache-knows", date: "June 2026", title: "What a build cache can and cannot know",
-      dek: "Content hashing is a claim about determinism, and most build steps quietly aren’t.",
+      dek: "Content hashing is a claim about determinism, and most build steps quietly aren't.",
       read: 12, projectSlug: "kettle" },
     { slug: "closing-the-loop", date: "November 2025", title: "Closing the loop on a star tracker",
       dek: "Open-loop tracking is a bet that nothing flexes. Something always flexes.",
@@ -858,15 +1284,15 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   /* ---------------- plates: one stroke, no fill ---------------- */
 
   var P = '<svg viewBox="0 0 320 200" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" preserveAspectRatio="xMidYMid meet">';
-  var T = 'font-family="Georgia, serif" font-style="italic" font-size="8" fill="currentColor" stroke="none"';
+  var T = 'font-family="Menlo, monospace" font-size="8" fill="currentColor" stroke="none"';
 
   var PLATES = {
     kettle: P +
-      '<rect x="18" y="22" width="72" height="30"/><text x="26" y="41" ' + T + '>source</text>' +
-      '<rect x="18" y="88" width="72" height="30"/><text x="26" y="107" ' + T + '>effect log</text>' +
-      '<rect x="126" y="54" width="74" height="34"/><text x="134" y="75" ' + T + '>planner</text>' +
-      '<rect x="126" y="122" width="74" height="30"/><text x="134" y="141" ' + T + '>cache</text>' +
-      '<rect x="236" y="54" width="66" height="34"/><text x="244" y="75" ' + T + '>artefact</text>' +
+      '<rect x="18" y="22" width="72" height="30" rx="3"/><text x="26" y="41" ' + T + '>source</text>' +
+      '<rect x="18" y="88" width="72" height="30" rx="3"/><text x="26" y="107" ' + T + '>effect log</text>' +
+      '<rect x="126" y="54" width="74" height="34" rx="3"/><text x="134" y="75" ' + T + '>planner</text>' +
+      '<rect x="126" y="122" width="74" height="30" rx="3"/><text x="134" y="141" ' + T + '>cache</text>' +
+      '<rect x="236" y="54" width="66" height="34" rx="3"/><text x="244" y="75" ' + T + '>artefact</text>' +
       '<path d="M90 37 H110 V66 H126"/><path d="M90 103 H110 V78 H126"/>' +
       '<path d="M200 71 H236"/><path d="M163 88 V122"/><path d="M200 137 H222 V82 H236"/>' +
       '<path d="M230 67 l6 4 -6 4"/><path d="M120 62 l6 4 -6 4"/>' +
@@ -875,16 +1301,16 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 
     tracewright: P +
       '<line x1="20" y1="30" x2="20" y2="160"/><line x1="20" y1="160" x2="300" y2="160"/>' +
-      '<rect x="24" y="36" width="180" height="8"/><rect x="24" y="51" width="96" height="8"/>' +
-      '<rect x="40" y="66" width="132" height="8"/><rect x="56" y="81" width="60" height="8"/>' +
-      '<rect x="56" y="96" width="164" height="8" stroke-dasharray="2 2"/>' +
-      '<rect x="120" y="111" width="112" height="8"/><rect x="150" y="126" width="140" height="8"/>' +
+      '<rect x="24" y="36" width="180" height="8" rx="2"/><rect x="24" y="51" width="96" height="8" rx="2"/>' +
+      '<rect x="40" y="66" width="132" height="8" rx="2"/><rect x="56" y="81" width="60" height="8" rx="2"/>' +
+      '<rect x="56" y="96" width="164" height="8" rx="2" stroke-dasharray="2 2"/>' +
+      '<rect x="120" y="111" width="112" height="8" rx="2"/><rect x="150" y="126" width="140" height="8" rx="2"/>' +
       '<line x1="204" y1="30" x2="204" y2="160" stroke-dasharray="3 3"/>' +
       '<text x="208" y="27" ' + T + '>baseline</text>' +
       '<text x="20" y="182" ' + T + '>fig. 1 — span waterfall, run A against run B</text></svg>',
 
     marginalia: P +
-      '<rect x="46" y="18" width="148" height="150"/>' +
+      '<rect x="46" y="18" width="148" height="150" rx="3"/>' +
       '<line x1="156" y1="18" x2="156" y2="168" stroke-dasharray="2 2"/>' +
       '<line x1="58" y1="40" x2="144" y2="40"/><line x1="58" y1="52" x2="144" y2="52"/>' +
       '<line x1="58" y1="64" x2="120" y2="64"/><line x1="58" y1="86" x2="144" y2="86"/>' +
@@ -899,8 +1325,8 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
       '<circle cx="112" cy="90" r="52"/><circle cx="112" cy="90" r="40" stroke-dasharray="3 3"/>' +
       '<circle cx="112" cy="90" r="9"/><line x1="60" y1="90" x2="164" y2="90"/><line x1="112" y1="38" x2="112" y2="142"/>' +
       '<path d="M112 38 A52 52 0 0 1 156 64"/>' +
-      '<rect x="196" y="60" width="34" height="60"/><circle cx="213" cy="90" r="10"/><line x1="213" y1="80" x2="213" y2="100"/>' +
-      '<path d="M164 90 H196"/><rect x="242" y="74" width="50" height="32"/><text x="248" y="94" ' + T + '>encoder</text>' +
+      '<rect x="196" y="60" width="34" height="60" rx="3"/><circle cx="213" cy="90" r="10"/><line x1="213" y1="80" x2="213" y2="100"/>' +
+      '<path d="M164 90 H196"/><rect x="242" y="74" width="50" height="32" rx="3"/><text x="248" y="94" ' + T + '>encoder</text>' +
       '<line x1="60" y1="158" x2="164" y2="158"/><path d="M64 154 l-4 4 4 4"/><path d="M160 154 l4 4 -4 4"/>' +
       '<text x="98" y="152" ' + T + '>Ø104</text>' +
       '<line x1="196" y1="50" x2="230" y2="50"/><path d="M200 46 l-4 4 4 4"/><path d="M226 46 l4 4 -4 4"/>' +
@@ -908,9 +1334,9 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
       '<line x1="18" y1="174" x2="302" y2="174"/><text x="18" y="190" ' + T + '>pl. 02 — right-ascension axis, scale 1:2</text></svg>',
 
     loam: P +
-      '<rect x="34" y="30" width="58" height="40"/><text x="42" y="55" ' + T + '>node</text>' +
+      '<rect x="34" y="30" width="58" height="40" rx="3"/><text x="42" y="55" ' + T + '>node</text>' +
       '<line x1="63" y1="30" x2="63" y2="12"/><path d="M55 16 l8 -6 8 6"/>' +
-      '<rect x="34" y="86" width="58" height="16"/><text x="40" y="99" ' + T + '>pv 1w</text>' +
+      '<rect x="34" y="86" width="58" height="16" rx="3"/><text x="40" y="99" ' + T + '>pv 1w</text>' +
       '<line x1="63" y1="70" x2="63" y2="86"/>' +
       '<line x1="18" y1="120" x2="302" y2="120"/>' +
       '<path d="M18 128 h284" stroke-dasharray="1 5"/><path d="M18 138 h284" stroke-dasharray="1 7"/>' +
@@ -918,12 +1344,12 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
       '<line x1="63" y1="102" x2="63" y2="120"/>' +
       '<path d="M63 120 V156"/><path d="M58 156 h10"/><text x="74" y="150" ' + T + '>probe −30 cm</text>' +
       '<path d="M96 44 q30 -14 60 0" stroke-dasharray="2 3"/><path d="M96 34 q44 -20 88 0" stroke-dasharray="2 3"/>' +
-      '<rect x="200" y="30" width="88" height="40"/><text x="208" y="48" ' + T + '>gateway</text>' +
+      '<rect x="200" y="30" width="88" height="40" rx="3"/><text x="208" y="48" ' + T + '>gateway</text>' +
       '<text x="208" y="62" ' + T + '>868 MHz</text>' +
       '<text x="18" y="186" ' + T + '>pl. 05 — section, mesh node in situ</text></svg>',
 
     hookshot: P +
-      '<rect x="24" y="126" width="70" height="34"/><text x="34" y="148" ' + T + '>base</text>' +
+      '<rect x="24" y="126" width="70" height="34" rx="3"/><text x="34" y="148" ' + T + '>base</text>' +
       '<circle cx="59" cy="126" r="7"/><circle cx="59" cy="126" r="2.5"/>' +
       '<line x1="59" y1="126" x2="130" y2="64"/><circle cx="130" cy="64" r="6"/><circle cx="130" cy="64" r="2"/>' +
       '<line x1="130" y1="64" x2="212" y2="50"/><circle cx="212" cy="50" r="5"/>' +
@@ -940,12 +1366,12 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
       '<line x1="34" y1="118" x2="298" y2="118" stroke-dasharray="2 4"/>' +
       '<line x1="34" y1="86" x2="298" y2="86" stroke-dasharray="2 4"/>' +
       '<line x1="34" y1="54" x2="298" y2="54" stroke-dasharray="2 4"/>' +
-      '<rect x="44" y="46" width="14" height="104"/><rect x="66" y="52" width="14" height="98"/>' +
-      '<rect x="88" y="60" width="14" height="90"/><rect x="110" y="58" width="14" height="92"/>' +
-      '<rect x="132" y="70" width="14" height="80"/><rect x="154" y="76" width="14" height="74"/>' +
-      '<rect x="176" y="84" width="14" height="66"/><rect x="198" y="96" width="14" height="54"/>' +
-      '<rect x="220" y="104" width="14" height="46"/><rect x="242" y="118" width="14" height="32"/>' +
-      '<rect x="264" y="130" width="14" height="20"/>' +
+      '<rect x="44" y="46" width="14" height="104" rx="2"/><rect x="66" y="52" width="14" height="98" rx="2"/>' +
+      '<rect x="88" y="60" width="14" height="90" rx="2"/><rect x="110" y="58" width="14" height="92" rx="2"/>' +
+      '<rect x="132" y="70" width="14" height="80" rx="2"/><rect x="154" y="76" width="14" height="74" rx="2"/>' +
+      '<rect x="176" y="84" width="14" height="66" rx="2"/><rect x="198" y="96" width="14" height="54" rx="2"/>' +
+      '<rect x="220" y="104" width="14" height="46" rx="2"/><rect x="242" y="118" width="14" height="32" rx="2"/>' +
+      '<rect x="264" y="130" width="14" height="20" rx="2"/>' +
       '<path d="M34 62 H298" stroke-dasharray="4 2"/><text x="252" y="58" ' + T + '>F1 0.91</text>' +
       '<text x="34" y="170" ' + T + '>per-species F1, ranked (87)</text>' +
       '<text x="34" y="188" ' + T + '>pl. 03 — held-out set, 400 mW budget</text></svg>',
@@ -962,13 +1388,194 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
       '<path d="M38 154 L296 40" stroke-dasharray="2 3"/><path d="M38 138 L296 24" stroke-dasharray="2 3"/>' +
       '<text x="196" y="120" ' + T + '>R² 0.87</text><text x="196" y="132" ' + T + '>RMSE 2.4 m</text>' +
       '<text x="38" y="168" ' + T + '>LiDAR canopy height (m) →</text>' +
-      '<text x="38" y="188" ' + T + '>pl. 06 — predicted against measured, three biomes</text></svg>'
+      '<text x="38" y="188" ' + T + '>pl. 06 — predicted against measured, three biomes</text></svg>',
+
+    /* ---- plates for the live entries ---- */
+
+    "openwrt-dns-everything-that-broke": P +
+      '<rect x="18" y="70" width="62" height="30" rx="3"/><text x="26" y="89" ' + T + '>client</text>' +
+      '<rect x="122" y="30" width="80" height="30" rx="3"/><text x="130" y="49" ' + T + '>dnsmasq :53</text>' +
+      '<rect x="122" y="106" width="80" height="30" rx="3"/><text x="130" y="125" ' + T + '>adguard :53</text>' +
+      '<rect x="240" y="70" width="62" height="30" rx="3"/><text x="248" y="89" ' + T + '>upstream</text>' +
+      '<path d="M80 85 H104 V45 H122" stroke-dasharray="2 3"/>' +
+      '<path d="M80 85 H104 V121 H122"/>' +
+      '<path d="M202 121 H222 V85 H240"/>' +
+      '<path d="M116 41 l6 4 -6 4"/><path d="M116 117 l6 4 -6 4"/><path d="M234 81 l6 4 -6 4"/>' +
+      '<path d="M148 60 V106" stroke-dasharray="1 3"/>' +
+      '<path d="M138 76 l20 14 M158 76 l-20 14"/>' +
+      '<line x1="18" y1="168" x2="302" y2="168" stroke-dasharray="3 3"/>' +
+      '<text x="18" y="186" ' + T + '>fig. 1 — two resolvers, one port</text></svg>',
+
+    bench: P +
+      '<rect x="18" y="60" width="70" height="34" rx="3"/><text x="26" y="81" ' + T + '>browser</text>' +
+      '<rect x="126" y="60" width="80" height="34" rx="3"/><text x="134" y="75" ' + T + '>express</text>' +
+      '<text x="134" y="87" ' + T + '>:4000</text>' +
+      '<rect x="244" y="60" width="58" height="34" rx="3"/><text x="252" y="81" ' + T + '>mongo</text>' +
+      '<rect x="126" y="126" width="80" height="30" rx="3"/><text x="134" y="145" ' + T + '>/admin</text>' +
+      '<path d="M88 77 H126"/><path d="M120 73 l6 4 -6 4"/>' +
+      '<path d="M206 77 H244"/><path d="M238 73 l6 4 -6 4"/>' +
+      '<path d="M166 94 V126" stroke-dasharray="2 3"/>' +
+      '<path d="M18 30 h96" stroke-dasharray="1 4"/><text x="18" y="24" ' + T + '>loopback only</text>' +
+      '<line x1="18" y1="172" x2="302" y2="172" stroke-dasharray="3 3"/>' +
+      '<text x="18" y="188" ' + T + '>fig. 1 — two containers, one compose file</text></svg>',
+
+    servearr: P +
+      '<rect x="18" y="40" width="56" height="28" rx="3"/><text x="24" y="58" ' + T + '>request</text>' +
+      '<rect x="102" y="40" width="56" height="28" rx="3"/><text x="112" y="58" ' + T + '>*arr</text>' +
+      '<rect x="186" y="40" width="56" height="28" rx="3"/><text x="192" y="58" ' + T + '>fetch</text>' +
+      '<rect x="102" y="110" width="56" height="28" rx="3"/><text x="108" y="128" ' + T + '>library</text>' +
+      '<rect x="186" y="110" width="70" height="28" rx="3"/><text x="192" y="128" ' + T + '>jellyfin</text>' +
+      '<path d="M74 54 H102"/><path d="M96 50 l6 4 -6 4"/>' +
+      '<path d="M158 54 H186"/><path d="M180 50 l6 4 -6 4"/>' +
+      '<path d="M214 68 V96 H158 V110" /><path d="M154 104 l4 6 4 -6"/>' +
+      '<path d="M158 124 H186"/><path d="M180 120 l6 4 -6 4"/>' +
+      '<circle cx="285" cy="124" r="10"/><path d="M281 124 l3 3 6 -7"/>' +
+      '<line x1="18" y1="168" x2="302" y2="168" stroke-dasharray="3 3"/>' +
+      '<text x="18" y="186" ' + T + '>fig. 1 — ask for a film, it appears</text></svg>',
+
+    mirror: P +
+      '<rect x="60" y="24" width="90" height="140" rx="3"/>' +
+      '<rect x="70" y="34" width="70" height="120" stroke-dasharray="2 2"/>' +
+      '<line x1="74" y1="52" x2="118" y2="52"/><line x1="74" y1="64" x2="106" y2="64"/>' +
+      '<line x1="74" y1="132" x2="122" y2="132"/><line x1="74" y1="144" x2="98" y2="144"/>' +
+      '<rect x="196" y="60" width="70" height="46" rx="3"/><text x="204" y="79" ' + T + '>display</text>' +
+      '<text x="204" y="94" ' + T + '>behind</text>' +
+      '<path d="M150 84 H196" stroke-dasharray="2 3"/>' +
+      '<rect x="196" y="128" width="70" height="26" rx="3"/><text x="204" y="145" ' + T + '>esp relay</text>' +
+      '<path d="M231 106 V128" stroke-dasharray="2 3"/>' +
+      '<path d="M46 40 q-10 20 0 40" stroke-dasharray="1 3"/><path d="M38 34 q-16 28 0 56" stroke-dasharray="1 3"/>' +
+      '<line x1="18" y1="176" x2="302" y2="176" stroke-dasharray="3 3"/>' +
+      '<text x="18" y="192" ' + T + '>pl. 01 — two-way glass, section</text></svg>',
+
+    "wall-tablet": P +
+      '<rect x="96" y="30" width="128" height="92" rx="6"/>' +
+      '<rect x="106" y="40" width="108" height="72" stroke-dasharray="2 2"/>' +
+      '<text x="130" y="84" font-family="Menlo, monospace" font-size="22" fill="currentColor" stroke="none">21:47</text>' +
+      '<circle cx="160" cy="35" r="2"/>' +
+      '<path d="M56 60 q14 16 0 32" stroke-dasharray="1 3"/><path d="M44 52 q22 24 0 48" stroke-dasharray="1 3"/>' +
+      '<circle cx="70" cy="76" r="4"/>' +
+      '<text x="30" y="120" ' + T + '>motion</text>' +
+      '<rect x="96" y="140" width="70" height="24" rx="3"/><text x="104" y="156" ' + T + '>relay 20-80%</text>' +
+      '<path d="M131 122 V140" stroke-dasharray="2 3"/>' +
+      '<path d="M224 76 h30" stroke-dasharray="2 3"/><rect x="254" y="62" width="48" height="28" rx="3"/>' +
+      '<text x="260" y="80" ' + T + '>server</text>' +
+      '<line x1="18" y1="180" x2="302" y2="180" stroke-dasharray="3 3"/>' +
+      '<text x="18" y="196" ' + T + '>fig. 1 — dark until you walk towards it</text></svg>',
+
+    "smart-switches": P +
+      '<rect x="20" y="34" width="64" height="110" rx="4"/>' +
+      '<rect x="32" y="46" width="18" height="28" rx="2"/><rect x="32" y="86" width="18" height="28" rx="2"/>' +
+      '<line x1="41" y1="52" x2="41" y2="60"/><line x1="41" y1="100" x2="41" y2="108"/>' +
+      '<text x="56" y="64" ' + T + '>dry</text>' +
+      '<rect x="126" y="60" width="70" height="52" rx="3"/><text x="134" y="82" ' + T + '>esp32</text>' +
+      '<text x="134" y="98" ' + T + '>devkit v1</text>' +
+      '<path d="M84 88 H126" stroke-dasharray="2 3"/>' +
+      '<rect x="234" y="40" width="68" height="30" rx="3"/><text x="242" y="59" ' + T + '>relay</text>' +
+      '<rect x="234" y="86" width="68" height="30" rx="3"/><text x="242" y="105" ' + T + '>ssr 60a</text>' +
+      '<path d="M196 74 H216 V55 H234"/><path d="M196 96 H216 V101 H234"/>' +
+      '<path d="M228 51 l6 4 -6 4"/><path d="M228 97 l6 4 -6 4"/>' +
+      '<circle cx="285" cy="146" r="12"/><path d="M279 146 h12 M285 140 v12"/>' +
+      '<path d="M268 70 q14 40 8 64" stroke-dasharray="1 3"/>' +
+      '<line x1="18" y1="176" x2="302" y2="176" stroke-dasharray="3 3"/>' +
+      '<text x="18" y="192" ' + T + '>fig. 1 — the rocker is data now, ₹60 a gang</text></svg>',
+
+    "smart-blinds": P +
+      '<rect x="36" y="24" width="120" height="130" rx="3"/>' +
+      '<line x1="36" y1="46" x2="156" y2="46"/>' +
+      '<line x1="44" y1="54" x2="148" y2="54" stroke-dasharray="4 3"/>' +
+      '<line x1="44" y1="66" x2="148" y2="66" stroke-dasharray="4 3"/>' +
+      '<line x1="44" y1="78" x2="148" y2="78" stroke-dasharray="4 3"/>' +
+      '<circle cx="176" cy="38" r="12"/><circle cx="176" cy="38" r="3"/>' +
+      '<path d="M176 50 q10 40 0 84" stroke-dasharray="2 3"/>' +
+      '<circle cx="176" cy="140" r="6"/>' +
+      '<circle cx="222" cy="52" r="10"/><circle cx="252" cy="52" r="22"/>' +
+      '<text x="214" y="30" ' + T + '>6:24</text>' +
+      '<rect x="236" y="96" width="60" height="34" rx="3"/><text x="244" y="112" ' + T + '>a4988 +</text>' +
+      '<text x="244" y="124" ' + T + '>d1 mini</text>' +
+      '<path d="M252 74 V96"/><path d="M248 90 l4 6 4 -6"/>' +
+      '<line x1="18" y1="172" x2="302" y2="172" stroke-dasharray="3 3"/>' +
+      '<text x="18" y="188" ' + T + '>pl. 03 — bead chain, printed 4:1</text></svg>',
+
+    "home-assistant": P +
+      '<rect x="128" y="70" width="64" height="44" rx="4"/><text x="140" y="88" ' + T + '>ha on</text>' +
+      '<text x="140" y="102" ' + T + '>pi 4</text>' +
+      '<circle cx="50" cy="40" r="9"/><circle cx="50" cy="120" r="9"/><circle cx="90" cy="168" r="9"/>' +
+      '<circle cx="270" cy="40" r="9"/><circle cx="270" cy="120" r="9"/><circle cx="230" cy="168" r="9"/>' +
+      '<circle cx="160" cy="26" r="9"/>' +
+      '<path d="M59 44 L128 76" stroke-dasharray="2 3"/><path d="M59 118 L128 100" stroke-dasharray="2 3"/>' +
+      '<path d="M98 162 L138 114" stroke-dasharray="2 3"/><path d="M261 44 L192 76" stroke-dasharray="2 3"/>' +
+      '<path d="M261 118 L192 100" stroke-dasharray="2 3"/><path d="M222 162 L182 114" stroke-dasharray="2 3"/>' +
+      '<path d="M160 35 V70" stroke-dasharray="2 3"/>' +
+      '<text x="204" y="146" ' + T + '>22 devices</text><text x="204" y="158" ' + T + '>79 automations</text>' +
+      '<line x1="18" y1="182" x2="302" y2="182" stroke-dasharray="3 3"/>' +
+      '<text x="18" y="196" ' + T + '>fig. 1 — the hub, and what survives it</text></svg>',
+
+    "home-server": P +
+      '<rect x="60" y="22" width="90" height="150" rx="4"/>' +
+      '<rect x="72" y="34" width="66" height="18" rx="2"/><text x="78" y="47" ' + T + '>500 gb</text>' +
+      '<rect x="72" y="58" width="66" height="18" rx="2"/><text x="78" y="71" ' + T + '>500 gb</text>' +
+      '<rect x="72" y="82" width="66" height="18" rx="2"/><text x="78" y="95" ' + T + '>500 gb</text>' +
+      '<path d="M72 118 h66" stroke-dasharray="2 2"/>' +
+      '<text x="72" y="136" ' + T + '>raidz1</text>' +
+      '<circle cx="78" cy="156" r="3"/><circle cx="90" cy="156" r="3"/>' +
+      '<rect x="196" y="34" width="86" height="30" rx="3"/><text x="204" y="53" ' + T + '>proxmox</text>' +
+      '<rect x="196" y="78" width="86" height="30" rx="3"/><text x="204" y="97" ' + T + '>truenas vm</text>' +
+      '<rect x="196" y="122" width="86" height="30" rx="3"/><text x="204" y="141" ' + T + '>nfs out</text>' +
+      '<path d="M150 49 H196"/><path d="M190 45 l6 4 -6 4"/>' +
+      '<path d="M239 64 V78"/><path d="M239 108 V122"/>' +
+      '<text x="196" y="172" ' + T + '>~1 tb usable</text>' +
+      '<line x1="18" y1="182" x2="302" y2="182" stroke-dasharray="3 3"/>' +
+      '<text x="18" y="196" ' + T + '>fig. 1 — an office desktop, promoted</text></svg>',
+
+    "ir-blaster": P +
+      '<rect x="30" y="76" width="66" height="36" rx="3"/><text x="38" y="92" ' + T + '>d1 mini</text>' +
+      '<text x="38" y="105" ' + T + '>+ ir led</text>' +
+      '<circle cx="104" cy="94" r="4"/>' +
+      '<path d="M110 84 L192 48" stroke-dasharray="2 3"/><path d="M110 94 L198 94" stroke-dasharray="2 3"/>' +
+      '<path d="M110 104 L192 142" stroke-dasharray="2 3"/>' +
+      '<rect x="198" y="30" width="76" height="34" rx="3"/><text x="206" y="51" ' + T + '>tv</text>' +
+      '<rect x="204" y="80" width="70" height="28" rx="3"/><text x="212" y="98" ' + T + '>soundbar</text>' +
+      '<rect x="198" y="126" width="76" height="34" rx="3"/><text x="206" y="147" ' + T + '>ac unit</text>' +
+      '<path d="M40 30 h20 v24 h-20 z"/><path d="M44 60 l-8 10"/>' +
+      '<path d="M70 26 h20 v24 h-20 z" stroke-dasharray="2 2"/>' +
+      '<text x="98" y="40" ' + T + '>x4</text>' +
+      '<line x1="18" y1="176" x2="302" y2="176" stroke-dasharray="3 3"/>' +
+      '<text x="18" y="192" ' + T + '>fig. 1 — four remotes, learned once</text></svg>',
+
+    ambilight: P +
+      '<rect x="70" y="34" width="180" height="104" rx="4"/>' +
+      '<rect x="82" y="46" width="156" height="80" stroke-dasharray="2 2"/>' +
+      '<circle cx="70" cy="44" r="2.2"/><circle cx="70" cy="66" r="2.2"/><circle cx="70" cy="88" r="2.2"/>' +
+      '<circle cx="70" cy="110" r="2.2"/><circle cx="70" cy="132" r="2.2"/>' +
+      '<circle cx="250" cy="44" r="2.2"/><circle cx="250" cy="66" r="2.2"/><circle cx="250" cy="88" r="2.2"/>' +
+      '<circle cx="250" cy="110" r="2.2"/><circle cx="250" cy="132" r="2.2"/>' +
+      '<circle cx="94" cy="34" r="2.2"/><circle cx="120" cy="34" r="2.2"/><circle cx="146" cy="34" r="2.2"/>' +
+      '<circle cx="172" cy="34" r="2.2"/><circle cx="198" cy="34" r="2.2"/><circle cx="224" cy="34" r="2.2"/>' +
+      '<circle cx="94" cy="138" r="2.2"/><circle cx="120" cy="138" r="2.2"/><circle cx="146" cy="138" r="2.2"/>' +
+      '<circle cx="172" cy="138" r="2.2"/><circle cx="198" cy="138" r="2.2"/><circle cx="224" cy="138" r="2.2"/>' +
+      '<rect x="26" y="150" width="76" height="26" rx="3"/><text x="34" y="167" ' + T + '>capture in</text>' +
+      '<path d="M102 163 h60 v-25" stroke-dasharray="2 3"/>' +
+      '<text x="200" y="168" ' + T + '>140 leds</text>' +
+      '<line x1="18" y1="184" x2="302" y2="184" stroke-dasharray="3 3"/>' +
+      '<text x="18" y="197" ' + T + '>fig. 1 — the tv, read through hdmi</text></svg>',
+
+    f22: P +
+      '<path d="M160 26 L176 70 L232 96 L232 110 L178 104 L172 134 L196 148 L196 158 L160 150 L124 158 L124 148 L148 134 L142 104 L88 110 L88 96 L144 70 Z"/>' +
+      '<line x1="160" y1="26" x2="160" y2="150" stroke-dasharray="2 4"/>' +
+      '<circle cx="160" cy="120" r="8" stroke-dasharray="2 2"/>' +
+      '<path d="M152 120 h16 M160 112 v16" stroke-dasharray="1 2"/>' +
+      '<text x="196" y="130" ' + T + '>prop, behind wing</text>' +
+      '<path d="M232 60 h40" stroke-dasharray="1 3"/><path d="M232 60 l30 -14" stroke-dasharray="1 3"/>' +
+      '<path d="M232 60 l30 14" stroke-dasharray="1 3"/><text x="240" y="46" ' + T + '>3 ch</text>' +
+      '<line x1="88" y1="176" x2="232" y2="176"/><path d="M92 172 l-4 4 4 4"/><path d="M228 172 l4 4 -4 4"/>' +
+      '<text x="140" y="170" ' + T + '>depron</text>' +
+      '<text x="18" y="196" ' + T + '>pl. 08 — planform, pusher layout</text></svg>'
   };
 
   function fallbackPlate(slug) {
     var h = 0, i;
     for (i = 0; i < slug.length; i++) { h = (h * 31 + slug.charCodeAt(i)) >>> 0; }
-    var s = P + '<rect x="18" y="18" width="284" height="146" stroke-dasharray="3 3"/>';
+    var s = P + '<rect x="18" y="18" width="284" height="146" rx="6" stroke-dasharray="3 3"/>';
     for (i = 0; i < 9; i++) {
       h = (h * 1103515245 + 12345) >>> 0;
       var x = 34 + (h % 246), y = 32 + ((h >>> 8) % 116);
@@ -982,33 +1589,6 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 
   function plateFor(slug) { return PLATES[slug] || fallbackPlate(slug); }
 
-  /* ---------------- icons ---------------- */
-
-  /* Solid marks, not hairline outlines — the reference row is filled brand
-     glyphs, and thin strokes at 16px read as grey smudges beside them. */
-  var ICONS = {
-    github: { label: "GitHub", d:
-      '<path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>' },
-    x: { label: "X", d:
-      '<path d="M12.6 0h2.454l-5.36 6.126L16 16h-4.937l-3.867-5.07L2.774 16H.318l5.733-6.554L0 0h5.063l3.495 4.633L12.6 0zm-.86 14.542h1.36L4.323 1.38H2.865l8.875 13.162z"/>' },
-    rss: { label: "RSS feed", d:
-      '<path d="M2 1.5a12.5 12.5 0 0 1 12.5 12.5h-2.6A9.9 9.9 0 0 0 2 4.1V1.5z"/>' +
-      '<path d="M2 6.3a7.7 7.7 0 0 1 7.7 7.7H7.1A5.1 5.1 0 0 0 2 8.9V6.3z"/>' +
-      '<circle cx="3.5" cy="12.5" r="1.8"/>' },
-    mail: { label: "Email", d:
-      '<path d="M.6 3h14.8a.6.6 0 0 1 .6.6v8.8a.6.6 0 0 1-.6.6H.6a.6.6 0 0 1-.6-.6V3.6A.6.6 0 0 1 .6 3z"/>' +
-      '<path d="M1.3 4.2 8 9.3l6.7-5.1" fill="none" stroke="var(--block-bg)" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>' }
-  };
-
-  function iconRow(size) {
-    return ["github", "x", "rss", "mail"].map(function (n) {
-      var ic = ICONS[n];
-      return '<a href="#/contact" data-nav aria-label="' + ic.label + '" title="' + ic.label + '">' +
-        '<svg width="' + size + '" height="' + size + '" viewBox="0 0 16 16" fill="currentColor">' +
-        ic.d + '</svg></a>';
-    }).join("");
-  }
-
   /* ---------------- lookups ---------------- */
 
   function projectBySlug(s) { return PROJECTS.filter(function (p) { return p.slug === s; })[0] || null; }
@@ -1019,57 +1599,145 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 
   function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
 
+  function chipFor(domain, label) {
+    return '<span class="chip ' + (DCOLOR[domain] || "c-orange") + '">' + esc(label || DOMAIN[domain] || "Project") + '</span>';
+  }
+
   /* ---------------- cards ---------------- */
 
   /* An uploaded cover wins; otherwise the project's line plate fills the image
-     slot. A magazine grid cannot have an empty image well. */
+     slot. A card grid cannot have an empty image well. */
   function imageFor(cover, plateSlug) {
     return cover
-      ? '<img src="' + esc(cover) + '" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover">'
+      ? '<img src="' + esc(cover) + '" alt="" loading="lazy">'
       : plateFor(plateSlug);
   }
 
-  function projectCard(p, opts) {
-    opts = opts || {};
-    return '<a class="card' + (opts.lead ? " lead-card" : "") + '" href="#/project/' + p.slug + '" data-nav>' +
+  function projectCard(p) {
+    /* The meta line repeats the short title only when the heading used the
+       headline — a project whose headline IS its title would print it twice. */
+    var meta = [];
+    if (p.headline && p.headline !== p.title) { meta.push(esc(p.title)); }
+    if (p.metric) { meta.push(esc(p.metric) + " " + esc(String(p.metricKey || "").toLowerCase())); }
+    return '<a class="card" href="#/project/' + p.slug + '" data-nav>' +
       '<div class="card-img">' + imageFor(p.cover, p.plate || p.slug) + '</div>' +
-      '<p class="eyebrow">' + (DOMAIN[p.domain] || "Project") + '</p>' +
-      '<h3>' + esc(p.headline || p.title) + '</h3>' +
-      (opts.lead ? '<p class="dek">' + esc(p.dek) + '</p>' : '') +
-      '<p class="byline">' + esc(p.title) +
-        (p.metric ? ' · ' + esc(p.metric) + " " + esc(String(p.metricKey).toLowerCase()) : '') + '</p>' +
-      '</a>';
+      '<div class="card-body">' +
+        chipFor(p.domain) +
+        '<h3>' + esc(p.headline || p.title) + '</h3>' +
+        (meta.length ? '<p class="card-meta">' + meta.join(" · ") + '</p>' : '') +
+        '<span class="card-link">View project <span class="arrow">↗</span></span>' +
+      '</div></a>';
   }
 
   function articleCard(a) {
     var p = a.projectSlug ? projectBySlug(a.projectSlug) : null;
     return '<a class="card" href="#/article/' + a.slug + '" data-nav>' +
       '<div class="card-img">' + imageFor(a.cover, p ? (p.plate || p.slug) : a.slug) + '</div>' +
-      '<p class="eyebrow">' + esc(a.category || "Essay") + '</p>' +
-      '<h3>' + esc(a.title) + '</h3>' +
-      '<p class="byline">' + esc(a.date || "") + ' · ' + a.read + ' min read</p>' +
-      '</a>';
+      '<div class="card-body">' +
+        '<span class="chip c-orange">' + esc(a.category || "Essay") + '</span>' +
+        '<h3>' + esc(a.title) + '</h3>' +
+        '<p class="card-meta">' + esc(a.date || "") + ' · ' + a.read + ' min read</p>' +
+        '<span class="card-link">Read post <span class="arrow">↗</span></span>' +
+      '</div></a>';
   }
 
   /* ---------------- home ---------------- */
 
+  var ICO = {
+    doc: '<svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 1.5h5.5L13 5v9.5H4z"/><path d="M9.5 1.5V5H13"/></svg>',
+    bolt: '<svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8.8 1.5 3.5 9h3.4l-.7 5.5L11.5 7H8.1z"/></svg>'
+  };
+
   function renderHome() {
     var byYear = PROJECTS.slice().sort(function (x, y) { return y.year - x.year; });
 
-    document.getElementById("latestGrid").innerHTML = byYear.length
-      ? projectCard(byYear[0], { lead: true }) +
-        byYear.slice(1, 5).map(function (p) { return projectCard(p); }).join("")
-      : '<p class="empty">Nothing published yet.</p>';
+    /* banner — the newest post gets the announcement slot */
+    document.getElementById("bannerHost").innerHTML = POSTS.length
+      ? '<a class="banner" href="#/article/' + POSTS[0].slug + '" data-nav>' +
+          '<span class="banner-ico">' + ICO.doc + '</span>' +
+          '<span><b>New on the blog</b><span>' + esc(POSTS[0].title) +
+            (POSTS[0].date ? ' — ' + esc(POSTS[0].date) : '') + '</span></span>' +
+          '<span class="arrow">→</span></a>'
+      : "";
 
-    /* Trending starts from the tail so the home page surfaces work the Latest
-       block didn't already show, wrapping round only if there isn't enough. */
-    var rest = byYear.slice(5).concat(byYear.slice(1, 5));
-    document.getElementById("trendingGrid").innerHTML =
-      rest.slice(0, 4).map(function (p) { return projectCard(p); }).join("") ||
-      '<p class="empty">More soon.</p>';
+    document.getElementById("statProjects").textContent = PROJECTS.length;
 
-    document.getElementById("blogGrid").innerHTML =
-      POSTS.slice(0, 3).map(articleCard).join("") || '<p class="empty">No posts yet.</p>';
+    /* two mini cards: latest project, latest post */
+    var mini = "";
+    if (byYear.length) {
+      mini += '<a class="mini" href="#/project/' + byYear[0].slug + '" data-nav>' +
+        '<span class="mini-ico" style="background:var(--cyan);color:var(--dark)">' + ICO.bolt + '</span>' +
+        '<span><b>Latest project</b><span>' + esc(byYear[0].title) + ' — ' + esc(byYear[0].dek || "") + '</span></span>' +
+        '<span class="arrow">→</span></a>';
+    }
+    if (POSTS.length) {
+      mini += '<a class="mini" href="#/article/' + POSTS[0].slug + '" data-nav>' +
+        '<span class="mini-ico" style="background:var(--magenta)">' + ICO.doc + '</span>' +
+        '<span><b>Latest write-up</b><span>' + esc(POSTS[0].title) + '</span></span>' +
+        '<span class="arrow">→</span></a>';
+    }
+    document.getElementById("miniCards").innerHTML = mini;
+
+    /* featured project — the newest entry with enough spec rows to show */
+    var feat = byYear.filter(function (p) { return (p.spec || []).length >= 4; })[0] || byYear[0];
+    if (feat) {
+      var post = postForProject(feat.slug);
+      document.getElementById("featHost").innerHTML =
+        '<div class="panel panel--surface feature">' +
+          '<div>' +
+            '<p class="kicker">Featured project</p>' +
+            '<h2>' + esc(feat.headline || feat.title) + '</h2>' +
+            '<p>' + esc(feat.dek || "") + '</p>' +
+            '<div class="cta-row">' +
+              '<a class="pill pill--cyan" href="#/project/' + feat.slug + '" data-nav>View ' + esc(feat.title) + ' <span class="arrow">↗</span></a>' +
+              (post ? '<a class="pill pill--magenta" href="#/article/' + post.slug + '" data-nav>Read the write-up</a>' : '') +
+            '</div>' +
+          '</div>' +
+          '<div class="keyspec">' +
+            '<p class="label">Key specs</p>' +
+            '<ul>' +
+              (feat.spec || []).slice(0, 4).map(function (kv) {
+                return '<li><span class="k">' + esc(kv[0]) + '</span><span class="v">' + esc(kv[1]) + '</span></li>';
+              }).join("") +
+              (feat.metric ? '<li><span class="k">' + esc(feat.metricKey || "Headline") + '</span><span class="v">' + esc(feat.metric) + '</span></li>' : '') +
+            '</ul>' +
+          '</div>' +
+        '</div>';
+    } else {
+      document.getElementById("featHost").innerHTML = "";
+    }
+
+    /* systems strip — every project as a small tile */
+    document.getElementById("stripHost").innerHTML = byYear.map(function (p) {
+      return '<a href="#/project/' + p.slug + '" data-nav>' +
+        '<span class="thumb">' + imageFor(p.cover, p.plate || p.slug) + '</span>' +
+        '<b>' + esc(p.title) + '</b>' +
+        '<span>' + esc(DOMAIN[p.domain] || "Project") + '</span></a>';
+    }).join("");
+
+    /* featured grid — the next three projects after the featured one */
+    var rest = byYear.filter(function (p) { return !feat || p.slug !== feat.slug; });
+    document.getElementById("workGrid").innerHTML =
+      rest.slice(0, 3).map(projectCard).join("") || '<p class="empty">More soon.</p>';
+
+    /* blog — a wide featured card, then a grid of the rest */
+    var host = document.getElementById("blogHome");
+    if (!POSTS.length) { host.innerHTML = '<p class="empty">No posts yet.</p>'; return; }
+    var lead = POSTS[0];
+    var leadProject = lead.projectSlug ? projectBySlug(lead.projectSlug) : null;
+    host.innerHTML =
+      '<a class="card post-hero" href="#/article/' + lead.slug + '" data-nav style="margin-bottom:var(--gap)">' +
+        '<div class="card-img">' + imageFor(lead.cover, leadProject ? (leadProject.plate || leadProject.slug) : lead.slug) + '</div>' +
+        '<div class="card-body" style="justify-content:center;gap:.7rem">' +
+          '<span class="chip c-orange">Featured</span>' +
+          '<p class="card-meta">' + esc(lead.date || "") + ' · ' + lead.read + ' min read</p>' +
+          '<h3 style="font-size:var(--t-h4)">' + esc(lead.title) + '</h3>' +
+          '<p class="dek">' + esc(lead.dek || "") + '</p>' +
+          '<span class="card-link">Read post <span class="arrow">↗</span></span>' +
+        '</div></a>' +
+      (POSTS.length > 1
+        ? '<div class="grid-3">' + POSTS.slice(1, 4).map(articleCard).join("") + '</div>'
+        : "");
   }
 
   /* ---------------- projects ---------------- */
@@ -1080,7 +1748,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
     var list = PROJECTS.filter(function (p) { return filter === "all" || p.domain === filter; })
       .sort(function (x, y) { return y.year - x.year || y.id - x.id; });
     document.getElementById("projectGrid").innerHTML =
-      list.length ? list.map(function (p) { return projectCard(p); }).join("")
+      list.length ? list.map(projectCard).join("")
                   : '<p class="empty">Nothing in this set yet.</p>';
     document.getElementById("projTally").textContent =
       list.length + (list.length === 1 ? " entry" : " entries");
@@ -1151,27 +1819,28 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 
     host.innerHTML =
       '<div class="article-head">' +
-        '<p class="eyebrow">' + (DOMAIN[p.domain] || "Project") + '</p>' +
+        chipFor(p.domain) +
         '<h1>' + esc(p.title) + '</h1>' +
-        '<p class="byline">' + p.year + ' · ' + esc(p.state || "") +
-          (p.metric ? ' · ' + esc(p.metric) + " " + esc(String(p.metricKey).toLowerCase()) : '') + '</p>' +
+        '<p class="meta">' + p.year + ' · ' + esc(p.state || "") +
+          (p.metric ? ' · ' + esc(p.metric) + " " + esc(String(p.metricKey || "").toLowerCase()) : '') + '</p>' +
       '</div>' +
       '<figure class="hero-figure"><div class="card-img">' + imageFor(p.cover, p.plate || p.slug) + '</div>' +
-        '<figcaption>' + esc(p.dek) + '</figcaption></figure>' +
+        '<figcaption>' + esc(p.dek || "") + '</figcaption></figure>' +
       '<div class="prose">' +
         /* Authored body when the backend supplied one; otherwise the canned
            domain notes keep the standalone mockup readable. */
         (p.bodyHtml || (NOTES[p.domain] || []).map(function (t) { return '<p>' + t + '</p>'; }).join("")) +
-        '<ul class="spec">' +
-          (p.spec || []).map(function (kv) {
-            return '<li><span class="k">' + esc(kv[0]) + '</span><span class="v">' + esc(kv[1]) + '</span></li>';
-          }).join("") +
-          (p.metric ? '<li><span class="k">' + esc(p.metricKey) + '</span><span class="v">' + esc(p.metric) + '</span></li>' : '') +
-        '</ul>' +
+        ((p.spec || []).length || p.metric ?
+          '<ul class="spec">' +
+            (p.spec || []).map(function (kv) {
+              return '<li><span class="k">' + esc(kv[0]) + '</span><span class="v">' + esc(kv[1]) + '</span></li>';
+            }).join("") +
+            (p.metric ? '<li><span class="k">' + esc(p.metricKey || "Headline") + '</span><span class="v">' + esc(p.metric) + '</span></li>' : '') +
+          '</ul>' : '') +
         (a ? '<h2>Written up in</h2><p><a href="#/article/' + a.slug + '" data-nav>' + esc(a.title) + '</a> — ' +
              esc(a.date || "") + ', ' + a.read + ' min read.</p>' : '') +
       '</div>' +
-      '<div class="backline"><a href="#/projects" data-nav>← All projects</a></div>';
+      '<div class="backline"><a class="pill" href="#/projects" data-nav>← All projects</a></div>';
   }
 
   function renderArticle(slug) {
@@ -1182,13 +1851,13 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 
     host.innerHTML =
       '<div class="article-head">' +
-        '<p class="eyebrow">' + esc(a.category || "Essay") + '</p>' +
+        '<span class="chip c-orange">' + esc(a.category || "Essay") + '</span>' +
         '<h1>' + esc(a.title) + '</h1>' +
-        '<p class="byline">' + esc(a.date || "") + ' · ' + a.read + ' min read</p>' +
+        '<p class="meta">' + esc(a.date || "") + ' · ' + a.read + ' min read</p>' +
       '</div>' +
       ((a.cover || p) ? '<figure class="hero-figure"><div class="card-img">' +
            imageFor(a.cover, p ? (p.plate || p.slug) : a.slug) + '</div>' +
-           (p ? '<figcaption>From ' + esc(p.title) + ' — ' + esc(p.dek) + '</figcaption>' : '') +
+           (p ? '<figcaption>From ' + esc(p.title) + ' — ' + esc(p.dek || "") + '</figcaption>' : '') +
            '</figure>' : '') +
       '<div class="prose">' +
         (a.bodyHtml ||
@@ -1210,9 +1879,9 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
         '<p>Write the assumption down first, in the same file as the code that depends on it, in a form a test can ' +
         'read. Everything else here is a consequence of not having done that.</p>')) +
         (p ? '<h2>Documents</h2><p><a href="#/project/' + p.slug + '" data-nav>' + esc(p.title) + '</a>' +
-             (p.metric ? ' — ' + esc(p.metric) + " " + esc(String(p.metricKey).toLowerCase()) : '') + '.</p>' : '') +
+             (p.metric ? ' — ' + esc(p.metric) + " " + esc(String(p.metricKey || "").toLowerCase()) : '') + '.</p>' : '') +
       '</div>' +
-      '<div class="backline"><a href="#/blogs" data-nav>← All posts</a></div>';
+      '<div class="backline"><a class="pill" href="#/blogs" data-nav>← All posts</a></div>';
   }
 
   /* ---------------- forms ---------------- */
@@ -1229,13 +1898,18 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
       return;
     }
     /* No backend. Say so rather than showing a "Sent" confirmation that would be a lie. */
-    corrForm.querySelector(".send").disabled = true;
+    corrForm.querySelector("button[type=submit]").disabled = true;
     note.textContent = "Mockup — nothing was actually sent";
   });
 
-  document.getElementById("subForm").addEventListener("submit", function (e) {
-    e.preventDefault();
-    document.getElementById("subNote").textContent = "Mockup — no list is connected to this form";
+  /* ---------------- systems strip scroll ---------------- */
+
+  var strip = document.getElementById("stripHost");
+  document.getElementById("stripPrev").addEventListener("click", function () {
+    strip.scrollBy({ left: -strip.clientWidth * 0.8, behavior: "smooth" });
+  });
+  document.getElementById("stripNext").addEventListener("click", function () {
+    strip.scrollBy({ left: strip.clientWidth * 0.8, behavior: "smooth" });
   });
 
   /* ---------------- routing ---------------- */
@@ -1248,7 +1922,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
       var el = document.getElementById("view-" + v);
       if (el) { el.classList.toggle("is-on", v === view); }
     });
-    Array.prototype.forEach.call(document.querySelectorAll(".mast-nav a[data-view]"), function (a) {
+    Array.prototype.forEach.call(document.querySelectorAll(".topnav a[data-view]"), function (a) {
       var v = a.getAttribute("data-view");
       if (v === view) { a.setAttribute("aria-current", "page"); } else { a.removeAttribute("aria-current"); }
     });
@@ -1270,9 +1944,6 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   window.addEventListener("hashchange", route);
 
   /* ---------------- boot ---------------- */
-
-  document.getElementById("mastSocial").innerHTML = iconRow(17);
-  document.getElementById("endSocial").innerHTML = iconRow(18);
 
   function paint() {
     renderHome();

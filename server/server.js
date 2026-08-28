@@ -168,7 +168,7 @@ marked.setOptions({ gfm: true, breaks: false, renderer });
    Helpers
    --------------------------------------------------------------- */
 
-const DOMAINS = new Set(["sw", "hw", "ml"]);
+const DOMAINS = new Set(["sw", "hw", "ml", "sh", "net", "3d"]);
 const STATUSES = new Set(["draft", "published"]);
 
 function bad(res, msg) {
